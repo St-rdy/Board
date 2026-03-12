@@ -23,6 +23,10 @@ dependencies {
     
     //DB 추가해야함
 
+
+    //JPA
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -30,6 +34,9 @@ dependencies {
     // 테스트 도구
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    //test lombok
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 dependencyLocking {
@@ -38,4 +45,8 @@ dependencyLocking {
 
 tasks.named('test') {
 	useJUnitPlatform()
+    // JDK 21+의 Mockito 동적 로딩 경고를 해결하기 위해,
+    // 테스트 시작 시점에 Mockito 에이전트를 명시적으로 로드하고
+    // 클래스 공유(CDS)를 비활성화
+    jvmArgs "-javaagent:${configurations.testRuntimeClasspath.find { it.name.contains('mockito-core') }}", '-Xshare:off'
 }
