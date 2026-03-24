@@ -22,8 +22,23 @@ public enum ErrorCode {
     PARENT_NOT_FOUND(404, "PARENT_NOT_FOUND", "상위 댓글을 찾을 수 없습니다."),
 
     // 500 Internal Server Error
-    DB_ERROR(500, "DB_ERROR", "데이터베이스 조회 중 오류가 발생했습니다.");
+    DB_ERROR(500, "DB_ERROR", "데이터베이스 조회 중 오류가 발생했습니다."),
 
+    //이미지 업로드 시 에러 코드 ------------------------------------------------------------------------
+
+    // 400 Bad Request (이미지 관련 추가)
+    EMPTY_FILE(400, "EMPTY_FILE", "첨부된 파일이 없습니다."),
+    INVALID_FILE_EXTENSION(400, "INVALID_FILE_EXTENSION", "지원하지 않는 이미지 형식입니다."),
+
+    // 400 Bad Request (이미지 유효성 및 정책 위반)
+    IMAGE_LIMIT_EXCEEDED(400, "IMAGE_LIMIT_EXCEEDED", "게시글 1개당 최대 10개의 이미지만 등록할 수 있습니다."),
+    ALREADY_MAPPED_IMAGE(400, "ALREADY_MAPPED_IMAGE", "이미 다른 게시글에 등록된 이미지입니다."),
+
+    // 403 Forbidden (권한 위반)
+    IMAGE_ACCESS_DENIED(403, "IMAGE_ACCESS_DENIED", "본인이 업로드한 이미지만 사용할 수 있습니다."),
+
+    // 404 Not Found (데이터 불일치 및 미존재)
+    IMAGE_NOT_FOUND(404, "IMAGE_NOT_FOUND", "요청한 이미지를 찾을 수 없거나 유효하지 않습니다.");
 
     private final int status;
     private final String code;
