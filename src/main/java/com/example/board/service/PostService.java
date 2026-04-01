@@ -9,6 +9,8 @@ import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostRepository;
 import com.example.board.entity.Post;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,14 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
 
+    // 게시글 목록 조회 (필터링, 페이징)
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
+        Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
+        return postPage.map(PostResponse::from);
+    }
+
+    // 게시글 생성
     @Transactional
     public PostResponse createPost(Long userId, PostCreateRequest postCreateRequest) {
         validatePostRequest(postCreateRequest);
