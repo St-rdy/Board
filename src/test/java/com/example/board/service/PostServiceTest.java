@@ -45,6 +45,14 @@ public class PostServiceTest {
 
         PostCreateRequest postCreateRequest = PostFixture.createPostRequest();
 
+        // 요청 개수(3개)와 동일하게 3개의 이미지를 반환하도록 수정
+        List<Image> mockImages = List.of(
+                ImageFixture.createImageWithUserId(userId),
+                ImageFixture.createImageWithUserId(userId),
+                ImageFixture.createImageWithUserId(userId)
+        );
+        when(imageRepository.findAllById(postCreateRequest.imageIds())).thenReturn(mockImages);
+
         Post savedPost = postCreateRequest.toEntity(userId);
         ReflectionTestUtils.setField(savedPost, "id", expectedPostId);
 
@@ -92,6 +100,7 @@ public class PostServiceTest {
         PostCreateRequest badRequest = PostFixture.createPostRequest();
 
         //when & then
+        // 요청 개수보다 적은 개수를 반환하게 하여 IMAGE_NOT_FOUND 유도
         when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(Collections.emptyList());
 
         Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
@@ -110,10 +119,15 @@ public class PostServiceTest {
         //given
         PostCreateRequest badRequest = PostFixture.createPostRequest();
 
-        Image otherUserImage =ImageFixture.createImageWithUserId(otherUserId);
+        // 3개를 반환하되 하나는 다른 유저 소유로 설정
+        List<Image> mockImages = List.of(
+                ImageFixture.createImageWithUserId(currentUserId),
+                ImageFixture.createImageWithUserId(otherUserId),
+                ImageFixture.createImageWithUserId(currentUserId)
+        );
 
         //when
-        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(List.of(otherUserImage));
+        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
 
         Assertions.assertThatThrownBy(() -> postService.createPost(currentUserId, badRequest))
                 .isInstanceOf(BusinessException.class)
@@ -128,8 +142,16 @@ public class PostServiceTest {
 
         //given
         PostCreateRequest badRequest = PostFixture.createPostRequest();
-        // 검토 필요
-        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(List.of(ImageFixture.createMappedImage(userId, 1L))); //동일 유저가 등록한 점유된 게시글
+
+        // 3개를 반환하되 하나는 이미 매핑된 상태로 설정
+        List<Image> mockImages = List.of(
+                ImageFixture.createImageWithUserId(userId),
+                ImageFixture.createMappedImage(userId, 100L),
+                ImageFixture.createImageWithUserId(userId)
+        );
+
+        // when
+        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
 
         Assertions.assertThatThrownBy(() -> postService.createPost(userId,badRequest))
                 .isInstanceOf(BusinessException.class)
