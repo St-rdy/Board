@@ -64,7 +64,7 @@ public class ImageFixture {
     public static MockMultipartFile createInvalidExtensionMockFile() {
         return new MockMultipartFile(
                 "file",
-                "test-document.txt", // 💡 확장자가 txt
+                "test-document.txt", // 확장자가 txt
                 "text/plain",
                 "dummy content".getBytes()
         );

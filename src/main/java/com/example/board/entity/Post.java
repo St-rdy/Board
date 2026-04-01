@@ -1,5 +1,5 @@
 package com.example.board.entity;
-import com.example.board.dto.post.request.PostCreateRequest;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -11,7 +11,6 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

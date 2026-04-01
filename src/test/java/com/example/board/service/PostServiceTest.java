@@ -2,12 +2,12 @@ package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.response.PostResponse;
-import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostRepository;
 import com.example.board.entity.Post;
+import com.example.board.entity.Image;
 import com.example.board.support.ImageFixture;
 import com.example.board.support.PostFixture;
 import org.assertj.core.api.Assertions;

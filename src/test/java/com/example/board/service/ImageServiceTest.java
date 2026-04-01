@@ -5,7 +5,7 @@ import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
-import com.example.board.support.ImageFixture; // 💡 픽스처 사용
+import com.example.board.support.ImageFixture; // 픽스처 사용
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
