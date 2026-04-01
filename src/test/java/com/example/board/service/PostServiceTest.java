@@ -2,12 +2,12 @@ package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.response.PostResponse;
+import com.example.board.entity.Image;
+import com.example.board.entity.Post;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostRepository;
-import com.example.board.entity.Post;
-import com.example.board.entity.Image;
 import com.example.board.support.ImageFixture;
 import com.example.board.support.PostFixture;
 import org.assertj.core.api.Assertions;
@@ -17,12 +17,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +43,84 @@ public class PostServiceTest {
     private PostService postService;
 
     @Test
+    @DisplayName("게시글 목록 조회 성공 - 페이징 처리")
+    void getPosts_success_paging() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Post> posts = Arrays.asList(
+                PostFixture.createPost(1L, 101L, "제목1", "내용1"),
+                PostFixture.createPost(1L, 102L, "제목2", "내용2")
+        );
+        Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
+
+        when(postRepository.findAllByFilters(null, null, pageable)).thenReturn(postPage);
+
+        // when
+        Page<PostResponse> result = postService.getPosts(null, null, pageable);
+
+        // then
+        Assertions.assertThat(result.getContent()).hasSize(2);
+        Assertions.assertThat(result.getTotalElements()).isEqualTo(2);
+        verify(postRepository, times(1)).findAllByFilters(null, null, pageable);
+    }
+
+    @Test
+    @DisplayName("게시글 목록 조회 성공 - 카테고리 필터링")
+    void getPosts_success_categoryFilter() {
+        // given
+        String category = "공시생 잡담";
+        Pageable pageable = PageRequest.of(0, 10);
+        Post post = PostFixture.createPostWithCategory(1L, 101L, category, "제목", "내용");
+        Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
+
+        when(postRepository.findAllByFilters(eq(category), any(), any(Pageable.class))).thenReturn(postPage);
+
+        // when
+        Page<PostResponse> result = postService.getPosts(category, null, pageable);
+
+        // then
+        Assertions.assertThat(result.getContent()).hasSize(1);
+        Assertions.assertThat(result.getContent().getFirst().category().get("name")).isEqualTo(category);
+    }
+
+    @Test
+    @DisplayName("게시글 목록 조회 성공 - 키워드 검색")
+    void getPosts_success_searchKeyword() {
+        // given
+        String keyword = "개발";
+        Pageable pageable = PageRequest.of(0, 10);
+        Post post = PostFixture.createPost(1L, 101L, "개발 질문입니다", "내용");
+        Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
+
+        when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(postPage);
+
+        // when
+        Page<PostResponse> result = postService.getPosts(null, keyword, pageable);
+
+        // then
+        Assertions.assertThat(result.getContent()).hasSize(1);
+        Assertions.assertThat(result.getContent().getFirst().title()).contains(keyword);
+    }
+
+    @Test
+    @DisplayName("게시글 목록 조회 성공 - 검색 결과가 없는 경우 빈 페이지 반환")
+    void getPosts_success_emptyResult() {
+        // given
+        String keyword = "존재하지않는키워드";
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Post> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+        when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(emptyPage);
+
+        // when
+        Page<PostResponse> result = postService.getPosts(null, keyword, pageable);
+
+        // then
+        Assertions.assertThat(result.getContent()).isEmpty();
+        Assertions.assertThat(result.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
     @DisplayName("게시글 생성 성공 테스트")
     void createPost_success() {
         // given
@@ -45,7 +129,6 @@ public class PostServiceTest {
 
         PostCreateRequest postCreateRequest = PostFixture.createPostRequest();
 
-        // 요청 개수(3개)와 동일하게 3개의 이미지를 반환하도록 수정
         List<Image> mockImages = List.of(
                 ImageFixture.createImageWithUserId(userId),
                 ImageFixture.createImageWithUserId(userId),
@@ -112,14 +195,12 @@ public class PostServiceTest {
     @Test
     @DisplayName("게시글 생성 실패 - 다른 사용자가 올린 이미지를 사용할 경우")
     void createPost_fail_imageAccessDenied(){
-
         Long currentUserId = 1L;
         Long otherUserId = 2L;
 
         //given
         PostCreateRequest badRequest = PostFixture.createPostRequest();
 
-        // 3개를 반환하되 하나는 다른 유저 소유로 설정
         List<Image> mockImages = List.of(
                 ImageFixture.createImageWithUserId(currentUserId),
                 ImageFixture.createImageWithUserId(otherUserId),
@@ -143,7 +224,6 @@ public class PostServiceTest {
         //given
         PostCreateRequest badRequest = PostFixture.createPostRequest();
 
-        // 3개를 반환하되 하나는 이미 매핑된 상태로 설정
         List<Image> mockImages = List.of(
                 ImageFixture.createImageWithUserId(userId),
                 ImageFixture.createMappedImage(userId, 100L),

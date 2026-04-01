@@ -2,12 +2,37 @@ package com.example.board.support;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 
+import com.example.board.entity.Post;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.List;
 import java.util.Map;
 
 public class PostFixture {
 
     final static List<Long> imageIds = List.of(1L, 2L, 3L);
+
+    public static Post createPost(Long userId, Long postId, String title, String content) {
+        Post post = Post.builder()
+                .userId(userId)
+                .categoryJson(Map.of("name", "공시생 잡담"))
+                .title(title)
+                .content(content)
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        return post;
+    }
+
+    public static Post createPostWithCategory(Long userId, Long postId, String category, String title, String content) {
+        Post post = Post.builder()
+                .userId(userId)
+                .categoryJson(Map.of("name", category))
+                .title(title)
+                .content(content)
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        return post;
+    }
 
     //게시글 성공 데이터 타입
     public static PostCreateRequest createPostRequest(){
