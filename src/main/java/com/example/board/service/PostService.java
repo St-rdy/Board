@@ -38,7 +38,7 @@ public class PostService {
         List<Image> images = validateImagesForCreate(userId, postCreateRequest.imageIds());
 
         Post post = postCreateRequest.toEntity(userId);
-        Post savedPost = postRepository.save(post);
+        Post savedPost = postRepository.save(post);;
 
         if (images != null) {
             images.forEach(image -> image.mapToPost(savedPost));
