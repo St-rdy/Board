@@ -82,6 +82,10 @@ public class Post {
     public void increaseViewCount() {
         this.viewCount++;
     }
+
+    public void increaseCommentCount() {
+        this.commentCount++;
+    }
 }
 /*
 Table posts {
