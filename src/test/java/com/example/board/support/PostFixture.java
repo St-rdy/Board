@@ -1,6 +1,10 @@
 package com.example.board.support;
 
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostUpdateRequest;
+
+import com.example.board.entity.Post;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +12,28 @@ import java.util.Map;
 public class PostFixture {
 
     final static List<Long> imageIds = List.of(1L, 2L, 3L);
+
+    public static Post createPost(Long userId, Long postId, String title, String content) {
+        Post post = Post.builder()
+                .userId(userId)
+                .categoryJson(Map.of("name", "공시생 잡담"))
+                .title(title)
+                .content(content)
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        return post;
+    }
+
+    public static Post createPostWithCategory(Long userId, Long postId, String category, String title, String content) {
+        Post post = Post.builder()
+                .userId(userId)
+                .categoryJson(Map.of("name", category))
+                .title(title)
+                .content(content)
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        return post;
+    }
 
     //게시글 성공 데이터 타입
     public static PostCreateRequest createPostRequest(){
@@ -59,6 +85,23 @@ public class PostFixture {
         );
     }
 
+    // 게시글 수정 요청 데이터
+    public static PostUpdateRequest createPostUpdateRequest() {
+        return new PostUpdateRequest(
+                Map.of("name", "수정된 카테고리"),
+                "수정된 제목",
+                "수정된 내용",
+                List.of(4L, 5L)
+        );
+    }
 
+    public static PostUpdateRequest createPostUpdateRequest(String title, String content) {
+        return new PostUpdateRequest(
+                Map.of("name", "수정된 카테고리"),
+                title,
+                content,
+                List.of(4L, 5L)
+        );
+    }
 
 }

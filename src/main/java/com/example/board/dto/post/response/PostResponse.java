@@ -1,7 +1,9 @@
 package com.example.board.dto.post.response;
 
 import com.example.board.entity.Post;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -14,8 +16,10 @@ public record PostResponse(
         int likeCount,
         int viewCount,
         int commentCount,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+        Instant createdAt,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+        Instant updatedAt,
         String thumbnail
 ) {
 

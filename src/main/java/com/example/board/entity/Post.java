@@ -12,6 +12,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -49,11 +50,11 @@ public class Post {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "thumbnail")
     private String thumbnail;
@@ -70,10 +71,12 @@ public class Post {
         this.content = content;
     }
 
-    // 비즈니스 메서드 예시
-    public void updateTitleAndContent(String newTitle, String newContent) {
-        this.title = newTitle;
-        this.content = newContent;
+    // 게시글 수정
+    public void update(Map<String, Object> categoryJson, String title, String content, String thumbnail) {
+        this.categoryJson = categoryJson;
+        this.title = title;
+        this.content = content;
+        this.thumbnail = thumbnail;
     }
 
     public void increaseViewCount() {

@@ -1,6 +1,7 @@
 package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
@@ -9,10 +10,13 @@ import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostRepository;
 import com.example.board.entity.Post;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -21,11 +25,19 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
 
+    // 게시글 목록 조회 (필터링, 페이징)
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
+        Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
+        return postPage.map(PostResponse::from);
+    }
+
+    // 게시글 생성
     @Transactional
     public PostResponse createPost(Long userId, PostCreateRequest postCreateRequest) {
-        validatePostRequest(postCreateRequest);
+        validatePostRequest(postCreateRequest.title(), postCreateRequest.content());
 
-        List<Image> images = validateImagesForCreate(userId, postCreateRequest.imageIds());
+        List<Image> images = validateImagesForPost(userId, null, postCreateRequest.imageIds());
 
         Post post = postCreateRequest.toEntity(userId);
         Post savedPost = postRepository.save(post);
@@ -37,23 +49,59 @@ public class PostService {
         return PostResponse.from(savedPost);
     }
 
+    // 게시글 수정
+    @Transactional
+    public PostResponse updatePost(Long userId, Long postId, PostUpdateRequest postUpdateRequest) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        // 소유권 확인
+        if (!post.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        validatePostRequest(postUpdateRequest.title(), postUpdateRequest.content());
+
+        // 이미지 업데이트 (요청에 포함된 경우만 처리)
+        if (postUpdateRequest.imageIds() != null) {
+            // 기존 이미지 매핑 해제
+            List<Image> currentImages = imageRepository.findAllByPostId(postId);
+            currentImages.forEach(image -> image.mapToPost(null));
+
+            // 새 이미지 검증 및 매핑
+            List<Image> newImages = validateImagesForPost(userId, post, postUpdateRequest.imageIds());
+            if (newImages != null) {
+                newImages.forEach(image -> image.mapToPost(post));
+            }
+        }
+
+        // 게시글 업데이트 (썸네일 포함)
+        // 이미지가 있다면 첫번째 이미지 없다면 기존 이미지로 지정
+        String thumbnail = (postUpdateRequest.imageIds() != null && !postUpdateRequest.imageIds().isEmpty())
+                ? imageRepository.findById(postUpdateRequest.imageIds().getFirst())
+                .map(Image::getImageUrl).orElse(null) : post.getThumbnail();
+
+        post.update(postUpdateRequest.category(), postUpdateRequest.title(), postUpdateRequest.content(), thumbnail);
+
+        return PostResponse.from(post);
+    }
+
     // 제목, 내용 무결성 검사
-    private void validatePostRequest(PostCreateRequest request) {
-        if (request.title() == null || request.title().isBlank()) {
+    private void validatePostRequest(String title, String content) {
+        if (title == null || title.isBlank()) {
             throw new BusinessException(ErrorCode.TITLE_REQUIRED);
         }
-        if (request.content() == null || request.content().isBlank()) {
+        if (content == null || content.isBlank()) {
             throw new BusinessException(ErrorCode.CONTENT_REQUIRED);
         }
     }
 
-    // 이미지 검사
-    private List<Image> validateImagesForCreate(Long userId, List<Long> imageIds) {
+    // 이미지 검사 (생성/수정 공통)
+    private List<Image> validateImagesForPost(Long userId, Post post, List<Long> imageIds) {
         if (imageIds == null || imageIds.isEmpty()) {
             return null;
         }
 
-        
         // 최대 이미지 수량
         if (imageIds.size() > 10) {
             throw new BusinessException(ErrorCode.IMAGE_LIMIT_EXCEEDED);
@@ -66,12 +114,13 @@ public class PostService {
             throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
         }
 
-        //이미지 소유권 및 점유 여부 검사
+        // 이미지 소유권 및 점유 여부 검사
         for (Image image : images) {
             if (!image.getUserId().equals(userId)) {
                 throw new BusinessException(ErrorCode.IMAGE_ACCESS_DENIED);
             }
-            if (image.getPost() != null) {
+            // 이미 다른 게시물에 매핑되어 있는 경우 (자기 자신은 제외)
+            if (image.getPost() != null && (post == null || !image.getPost().getId().equals(post.getId()))) {
                 throw new BusinessException(ErrorCode.ALREADY_MAPPED_IMAGE);
             }
         }
