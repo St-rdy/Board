@@ -1,9 +1,13 @@
 package com.example.board.controller;
 
+import com.example.board.dto.JwtUserInfo;
+import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.service.PostService;
 import com.example.board.security.JwtUtil;
 import com.example.board.security.JwtFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +18,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,16 +33,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PostController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 public class PostControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private PostService postService;
@@ -57,7 +70,7 @@ public class PostControllerTest {
                 "테스트 내용",
                 1L,
                 0, 0, 0,
-                OffsetDateTime.now(),
+                Instant.now(),
                 null,
                 null
         );
@@ -92,7 +105,7 @@ public class PostControllerTest {
                 "내용",
                 1L,
                 0, 0, 0,
-                OffsetDateTime.now(),
+                Instant.now(),
                 null,
                 null
         );
@@ -109,5 +122,52 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].title").value("자바 질문입니다"))
                 .andExpect(jsonPath("$.data.content[0].category.name").value(category));
+    }
+
+    @Test
+    @DisplayName("게시글 수정 API 성공 테스트")
+    void updatePost_success() throws Exception {
+        // given
+        Long postId = 1L;
+
+        // SecurityContext에 Mock 유저 주입 ← 이 부분 추가
+        JwtUserInfo mockUser = new JwtUserInfo(1L);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+        );
+
+        PostUpdateRequest updateRequest = new PostUpdateRequest(
+                Map.of("name", "수정된 카테고리"),
+                "수정된 제목",
+                "수정된 내용",
+                List.of(1L, 2L)
+        );
+        PostResponse postResponse = new PostResponse(
+                postId,
+                updateRequest.category(),
+                updateRequest.title(),
+                updateRequest.content(),
+                1L,
+                0, 0, 0,
+                Instant.now(),
+                Instant.now(),
+                null
+        );
+
+        when(postService.updatePost(any(), eq(postId), any(PostUpdateRequest.class))).thenReturn(postResponse);
+
+        // when and then
+        mockMvc.perform(patch("/api/v1/post/{postId}", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.title").value("수정된 제목"))
+                .andExpect(jsonPath("$.message").value("게시글 수정 성공"));
+    }
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 }

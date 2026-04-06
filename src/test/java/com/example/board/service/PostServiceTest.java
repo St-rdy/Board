@@ -1,6 +1,7 @@
 package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
 import com.example.board.entity.Post;
@@ -26,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -237,5 +239,89 @@ public class PostServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.ALREADY_MAPPED_IMAGE);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 성공 테스트")
+    void updatePost_success() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(userId, postId, "원본 제목", "원본 내용");
+        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        List<Image> currentImages = List.of(ImageFixture.createMappedImage(userId, postId));
+        when(imageRepository.findAllByPostId(postId)).thenReturn(currentImages);
+
+        List<Image> newImages = List.of(
+                ImageFixture.createImageWithUserId(userId),
+                ImageFixture.createImageWithUserId(userId)
+        );
+        when(imageRepository.findAllById(updateRequest.imageIds())).thenReturn(newImages);
+        when(imageRepository.findById(updateRequest.imageIds().getFirst())).thenReturn(Optional.of(newImages.getFirst()));
+
+        // when
+        PostResponse result = postService.updatePost(userId, postId, updateRequest);
+
+        // then
+        Assertions.assertThat(result.title()).isEqualTo(updateRequest.title());
+        Assertions.assertThat(result.content()).isEqualTo(updateRequest.content());
+        verify(postRepository, times(1)).findById(postId);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 실패 - 존재하지 않는 게시글")
+    void updatePost_fail_notFound() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 실패 - 권한 없음 (작성자가 아님)")
+    void updatePost_fail_forbidden() {
+        // given
+        Long userId = 1L;
+        Long otherUserId = 2L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(otherUserId, postId, "제목", "내용");
+        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 실패 - 제목 비어있음")
+    void updatePost_fail_emptyTitle() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest("", "내용");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TITLE_REQUIRED);
     }
 }

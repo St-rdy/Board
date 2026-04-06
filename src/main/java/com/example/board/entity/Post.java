@@ -71,10 +71,12 @@ public class Post {
         this.content = content;
     }
 
-    // 비즈니스 메서드 예시
-    public void updateTitleAndContent(String newTitle, String newContent) {
-        this.title = newTitle;
-        this.content = newContent;
+    // 게시글 수정
+    public void update(Map<String, Object> categoryJson, String title, String content, String thumbnail) {
+        this.categoryJson = categoryJson;
+        this.title = title;
+        this.content = content;
+        this.thumbnail = thumbnail;
     }
 
     public void increaseViewCount() {

@@ -1,6 +1,7 @@
 package com.example.board.support;
 
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostUpdateRequest;
 
 import com.example.board.entity.Post;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -84,6 +85,23 @@ public class PostFixture {
         );
     }
 
+    // 게시글 수정 요청 데이터
+    public static PostUpdateRequest createPostUpdateRequest() {
+        return new PostUpdateRequest(
+                Map.of("name", "수정된 카테고리"),
+                "수정된 제목",
+                "수정된 내용",
+                List.of(4L, 5L)
+        );
+    }
 
+    public static PostUpdateRequest createPostUpdateRequest(String title, String content) {
+        return new PostUpdateRequest(
+                Map.of("name", "수정된 카테고리"),
+                title,
+                content,
+                List.of(4L, 5L)
+        );
+    }
 
 }
