@@ -21,6 +21,7 @@ public enum ErrorCode {
 
     // 404 Not Found
     NOT_FOUND(404, "NOT_FOUND", "게시글을 찾을 수 없습니다."),
+    COMMENT_NOT_FOUND(404, "NOT_FOUND", "댓글을 찾을 수 없습니다."),
     PARENT_NOT_FOUND(404, "PARENT_NOT_FOUND", "상위 댓글을 찾을 수 없습니다."),
 
     // 500 Internal Server Error

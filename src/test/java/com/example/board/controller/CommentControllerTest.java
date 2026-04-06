@@ -27,6 +27,8 @@ import java.util.Collections;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -80,6 +82,26 @@ class CommentControllerTest {
                 .andExpect(jsonPath("$.message").value("댓글 작성 성공"))
                 .andExpect(jsonPath("$.data.content").value("댓글 테스트 내용"))
                 .andExpect(jsonPath("$.data.nickname").value(nickname));
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 API 성공 테스트")
+    @WithMockUser
+    void deleteComment_Success() throws Exception {
+        // given
+        Long commentId = 100L;
+        Long userId = 1L;
+        JwtUserInfo userInfo = new JwtUserInfo(userId, "nickname", "profileUrl");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(userInfo, null, Collections.emptyList())
+        );
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/comment/{commentId}", commentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("댓글이 삭제되었습니다."));
+
+        verify(commentService).deleteComment(eq(userInfo), eq(commentId));
     }
 
     @AfterEach

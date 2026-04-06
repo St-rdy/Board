@@ -118,4 +118,53 @@ class CommentServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PARENT);
         }
     }
+
+    @Nested
+    @DisplayName("댓글 삭제 테스트")
+    class DeleteComment {
+
+        @Test
+        @DisplayName("성공: 작성자가 본인의 댓글을 삭제하면 상태가 DELETED로 변경된다")
+        void deleteComment_Success() {
+            // given
+            Long userId = 1L;
+            Long commentId = 100L;
+            JwtUserInfo userInfo = new JwtUserInfo(userId, "nickname", "profileUrl");
+            Post post = PostFixture.createPost(userId, 1L, "제목", "내용");
+            Comment comment = Comment.builder()
+                    .post(post)
+                    .userId(userId)
+                    .content("삭제될 댓글")
+                    .build();
+
+            given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+            // when
+            commentService.deleteComment(userInfo, commentId);
+
+            // then
+            assertThat(comment.getStatus()).isEqualTo("DELETED");
+        }
+
+        @Test
+        @DisplayName("실패: 작성자가 아닌 사용자가 삭제를 시도하면 FORBIDDEN 예외가 발생한다")
+        void deleteComment_Forbidden() {
+            // given
+            Long ownerId = 1L;
+            Long otherUserId = 2L;
+            Long commentId = 100L;
+            JwtUserInfo otherUserInfo = new JwtUserInfo(otherUserId, "other", "url");
+            Comment comment = Comment.builder()
+                    .userId(ownerId)
+                    .content("댓글")
+                    .build();
+
+            given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+            // when & then
+            assertThatThrownBy(() -> commentService.deleteComment(otherUserInfo, commentId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+        }
+    }
 }
