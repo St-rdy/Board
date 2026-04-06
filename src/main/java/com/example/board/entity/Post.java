@@ -86,6 +86,11 @@ public class Post {
     public void increaseCommentCount() {
         this.commentCount++;
     }
+    public void decreaseCommentCount() {
+        if (this.commentCount <= 0) {
+            this.commentCount--;
+        }
+    }
 }
 /*
 Table posts {

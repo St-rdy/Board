@@ -47,4 +47,22 @@ public class CommentService {
 
         return CommentResponse.from(savedComment, userInfo.nickname(), userInfo.profileUrl());
     }
+
+    @Transactional
+    public void deleteComment(JwtUserInfo userInfo, Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+        
+        // 소유권 확인
+        if (!comment.getUserId().equals(userInfo.userId())){
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        if ("DELETED".equals(comment.getStatus())){
+            return; //예외처리를 할까..
+        }
+
+        comment.delete();
+        comment.getPost().decreaseCommentCount();
+    }
 }
