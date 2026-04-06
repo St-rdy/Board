@@ -3,6 +3,7 @@ package com.example.board.controller;
 import com.example.board.dto.ApiResponse;
 import com.example.board.dto.JwtUserInfo;
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +39,16 @@ public class PostController {
 
         PostResponse response = postService.createPost(userInfo.userId(), postCreateRequest);
         return ResponseEntity.ok(ApiResponse.success("게시글 작성 성공", response));
+    }
+
+    // 게시글 수정 API
+    @PatchMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostResponse>> updatePost(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long postId,
+            @RequestBody PostUpdateRequest postUpdateRequest) {
+
+        PostResponse response = postService.updatePost(userInfo.userId(), postId, postUpdateRequest);
+        return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공", response));
     }
 }
