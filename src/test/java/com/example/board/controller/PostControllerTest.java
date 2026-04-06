@@ -130,8 +130,8 @@ public class PostControllerTest {
         // given
         Long postId = 1L;
 
-        // SecurityContext에 Mock 유저 주입 ← 이 부분 추가
-        JwtUserInfo mockUser = new JwtUserInfo(1L);
+        // SecurityContext에 Mock 유저 주입
+        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
         );
