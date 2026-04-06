@@ -36,4 +36,12 @@ public class CommentController {
 
         return ResponseEntity.ok(ApiResponse.success("댓글이 삭제되었습니다.",null));
     }
+
+    @PatchMapping("/comment/{commentId}")
+    public ResponseEntity<ApiResponse<CommentResponse>> updateComment(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long commentId,
+            @RequestBody CommentCreateRequest request) {
+        return null;
+    }
 }

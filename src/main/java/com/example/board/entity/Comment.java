@@ -60,6 +60,10 @@ public class Comment {
         this.status = "ALIVE";
     }
 
+    public void update(String content) {
+        this.content = content;
+    }
+
     public void delete() {
         this.status = "DELETED";
     }
