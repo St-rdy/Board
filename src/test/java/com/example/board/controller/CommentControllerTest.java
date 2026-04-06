@@ -2,6 +2,7 @@ package com.example.board.controller;
 
 import com.example.board.dto.JwtUserInfo;
 import com.example.board.dto.comment.request.CommentCreateRequest;
+import com.example.board.dto.comment.request.CommentUpdateRequest;
 import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.security.JwtFilter;
 import com.example.board.security.JwtUtil;
@@ -29,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -102,6 +104,35 @@ class CommentControllerTest {
                 .andExpect(jsonPath("$.message").value("댓글이 삭제되었습니다."));
 
         verify(commentService).deleteComment(eq(userInfo), eq(commentId));
+    }
+
+    @Test
+    @DisplayName("댓글 수정 API 성공 테스트")
+    @WithMockUser
+    void updateComment_Success() throws Exception {
+        // given
+        Long commentId = 100L;
+        Long userId = 1L;
+        String nickname = "테스트닉네임";
+        String profileUrl = "http://profile.com";
+        JwtUserInfo userInfo = new JwtUserInfo(userId, nickname, profileUrl);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(userInfo, null, Collections.emptyList())
+        );
+
+        CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글 내용");
+        CommentResponse response = new CommentResponse(commentId, userId, nickname, profileUrl, "수정된 댓글 내용", "ALIVE", Instant.now());
+
+        given(commentService.updateComment(eq(userInfo), eq(commentId), any(CommentUpdateRequest.class)))
+                .willReturn(response);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/comment/{commentId}", commentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("댓글 수정 성공"))
+                .andExpect(jsonPath("$.data.content").value("수정된 댓글 내용"));
     }
 
     @AfterEach

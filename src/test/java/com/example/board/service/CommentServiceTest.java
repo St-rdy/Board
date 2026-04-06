@@ -2,6 +2,7 @@ package com.example.board.service;
 
 import com.example.board.dto.JwtUserInfo;
 import com.example.board.dto.comment.request.CommentCreateRequest;
+import com.example.board.dto.comment.request.CommentUpdateRequest;
 import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.entity.Comment;
 import com.example.board.entity.Post;
@@ -165,6 +166,68 @@ class CommentServiceTest {
             assertThatThrownBy(() -> commentService.deleteComment(otherUserInfo, commentId))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+        }
+    }
+
+    @Nested
+    @DisplayName("댓글 수정 테스트")
+    class UpdateComment {
+
+        @Test
+        @DisplayName("성공: 작성자가 본인의 댓글 내용을 수정한다")
+        void updateComment_Success() {
+            // given
+            Long userId = 1L;
+            Long commentId = 100L;
+            JwtUserInfo userInfo = new JwtUserInfo(userId, "nickname", "profileUrl");
+            Comment comment = Comment.builder()
+                    .userId(userId)
+                    .content("기존 내용")
+                    .build();
+            CommentUpdateRequest request = new CommentUpdateRequest("수정된 내용");
+
+            given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+            // when
+            CommentResponse response = commentService.updateComment(userInfo, commentId, request);
+
+            // then
+            assertThat(response.content()).isEqualTo("수정된 내용");
+        }
+
+        @Test
+        @DisplayName("실패: 작성자가 아닌 사용자가 수정을 시도하면 FORBIDDEN 예외가 발생한다")
+        void updateComment_Forbidden() {
+            // given
+            Long ownerId = 1L;
+            Long otherUserId = 2L;
+            Long commentId = 100L;
+            JwtUserInfo otherUserInfo = new JwtUserInfo(otherUserId, "other", "url");
+            Comment comment = Comment.builder()
+                    .userId(ownerId)
+                    .content("기존 내용")
+                    .build();
+            CommentUpdateRequest request = new CommentUpdateRequest("수정 시도");
+
+            given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+            // when & then
+            assertThatThrownBy(() -> commentService.updateComment(otherUserInfo, commentId, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+        }
+
+        @Test
+        @DisplayName("실패: 수정할 내용이 비어있으면 CONTENT_REQUIRED 예외가 발생한다")
+        void updateComment_ContentRequired() {
+            // given
+            JwtUserInfo userInfo = new JwtUserInfo(1L, "nickname", "profileUrl");
+            CommentUpdateRequest request = new CommentUpdateRequest(" "); // 공백 문자열
+
+            // when & then
+            assertThatThrownBy(() -> commentService.updateComment(userInfo, 100L, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CONTENT_REQUIRED);
         }
     }
 }
