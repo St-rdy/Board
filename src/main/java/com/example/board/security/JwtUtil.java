@@ -38,10 +38,11 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
         
-        // jwt 정보 추가해야함 일단 userId만
         Long userId = claims.get("userId", Long.class);
+        String nickname = claims.get("nickname", String.class);
+        String profileUrl = claims.get("profileUrl", String.class);
 
-        return new JwtUserInfo(userId);
+        return new JwtUserInfo(userId, nickname, profileUrl);
     }
 
 }
