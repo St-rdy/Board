@@ -2,6 +2,7 @@ package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
@@ -24,9 +25,16 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
+    private final CommentService commentService;
 
-    // 게시글 목록 조회 (필터링, 페이징)
+    // 게시글 상세 조회
     @Transactional(readOnly = true)
+    public PostDetailResponse getPostDetail(Long postId, Pageable pageable) {
+        // TODO: 구현 예정
+        return null;
+    }
+
+    // 게시글 목록 조회 (필터링, 페이징)    @Transactional(readOnly = true)
     public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
         Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
         return postPage.map(PostResponse::from);

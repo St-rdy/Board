@@ -31,6 +31,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,13 +61,16 @@ class CommentServiceTest {
             
             // 루트 댓글 2개 생성
             Comment root1 = Comment.builder().post(post).userId(1L).content("루트1").build();
+            ReflectionTestUtils.setField(root1, "id", 101L);
             Comment root2 = Comment.builder().post(post).userId(2L).content("루트2").build();
+            ReflectionTestUtils.setField(root2, "id", 102L);
             
             Page<Comment> rootPage = new PageImpl<>(List.of(root1, root2), pageable, 2);
             given(commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(postId, pageable)).willReturn(rootPage);
             
             // root1에 대한 대댓글 1개 생성
             Comment reply1 = Comment.builder().post(post).userId(3L).parent(root1).content("대댓글1").build();
+            ReflectionTestUtils.setField(reply1, "id", 201L);
             given(commentRepository.findByParentIdInOrderByCreatedAtAsc(any())).willReturn(List.of(reply1));
 
             // when
@@ -87,6 +92,7 @@ class CommentServiceTest {
             Post post = PostFixture.createPost(1L, postId, "제목", "내용");
             
             Comment deletedComment = Comment.builder().post(post).userId(1L).content("비밀 내용").build();
+            ReflectionTestUtils.setField(deletedComment, "id", 101L);
             deletedComment.delete(); // status = DELETED
             
             Page<Comment> rootPage = new PageImpl<>(List.of(deletedComment), pageable, 1);

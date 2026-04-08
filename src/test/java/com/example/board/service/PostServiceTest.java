@@ -2,6 +2,7 @@ package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
 import com.example.board.entity.Post;
@@ -41,8 +42,41 @@ public class PostServiceTest {
     @Mock
     private ImageRepository imageRepository;
 
+    @Mock
+    private CommentService commentService;
+
     @InjectMocks
     private PostService postService;
+
+    @Test
+    @DisplayName("게시글 상세 조회 성공 - 조회수 증가 및 댓글 포함")
+    void getPostDetail_success() {
+        // given
+        Long postId = 100L;
+        Long userId = 1L;
+        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+        int initialViewCount = post.getViewCount();
+
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<com.example.board.dto.comment.response.CommentResponse> commentPage = new PageImpl<>(List.of(), pageable, 0);
+
+        List<Image> images = List.of(ImageFixture.createMappedImage(userId, postId));
+        List<String> imageUrls = images.stream().map(Image::getImageUrl).toList();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(imageRepository.findAllByPostId(postId)).thenReturn(images);
+        when(commentService.getCommentsByPost(eq(postId), any(Pageable.class))).thenReturn(commentPage);
+
+        // when
+        PostDetailResponse result = postService.getPostDetail(postId, pageable);
+
+        // then
+        Assertions.assertThat(result.id()).isEqualTo(postId);
+        Assertions.assertThat(result.viewCount()).isEqualTo(initialViewCount + 1);
+        Assertions.assertThat(result.imageUrls()).containsExactlyElementsOf(imageUrls);
+        verify(postRepository, times(1)).findById(postId);
+        verify(commentService, times(1)).getCommentsByPost(eq(postId), any(Pageable.class));
+    }
 
     @Test
     @DisplayName("게시글 목록 조회 성공 - 페이징 처리")
