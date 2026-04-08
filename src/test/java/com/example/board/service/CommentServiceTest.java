@@ -27,6 +27,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {
 
@@ -38,6 +46,67 @@ class CommentServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Nested
+    @DisplayName("댓글 조회 테스트")
+    class GetComments {
+
+        @Test
+        @DisplayName("성공: 게시글의 댓글을 계층형으로 조회한다")
+        void getComments_Success() {
+            // given
+            Long postId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            Post post = PostFixture.createPost(1L, postId, "제목", "내용");
+            
+            // 루트 댓글 2개 생성
+            Comment root1 = Comment.builder().post(post).userId(1L).content("루트1").build();
+            ReflectionTestUtils.setField(root1, "id", 101L);
+            Comment root2 = Comment.builder().post(post).userId(2L).content("루트2").build();
+            ReflectionTestUtils.setField(root2, "id", 102L);
+            
+            Page<Comment> rootPage = new PageImpl<>(List.of(root1, root2), pageable, 2);
+            given(commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(postId, pageable)).willReturn(rootPage);
+            
+            // root1에 대한 대댓글 1개 생성
+            Comment reply1 = Comment.builder().post(post).userId(3L).parent(root1).content("대댓글1").build();
+            ReflectionTestUtils.setField(reply1, "id", 201L);
+            given(commentRepository.findByParentIdInOrderByCreatedAtAsc(any())).willReturn(List.of(reply1));
+
+            // when
+            Page<CommentResponse> responses = commentService.getCommentsByPost(postId, pageable);
+
+            // then
+            assertThat(responses.getContent()).hasSize(2);
+            assertThat(responses.getContent().getFirst().content()).isEqualTo("루트1");
+            assertThat(responses.getContent().getFirst().replies()).hasSize(1);
+            assertThat(responses.getContent().getFirst().replies().getFirst().content()).isEqualTo("대댓글1");
+        }
+
+        @Test
+        @DisplayName("성공: 삭제된 댓글은 '삭제된 댓글입니다.'로 마스킹되어 조회된다")
+        void getComments_MaskingDeleted() {
+            // given
+            Long postId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            Post post = PostFixture.createPost(1L, postId, "제목", "내용");
+            
+            Comment deletedComment = Comment.builder().post(post).userId(1L).content("비밀 내용").build();
+            ReflectionTestUtils.setField(deletedComment, "id", 101L);
+            deletedComment.delete(); // status = DELETED
+            
+            Page<Comment> rootPage = new PageImpl<>(List.of(deletedComment), pageable, 1);
+            given(commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(postId, pageable)).willReturn(rootPage);
+            given(commentRepository.findByParentIdInOrderByCreatedAtAsc(any())).willReturn(List.of());
+
+            // when
+            Page<CommentResponse> responses = commentService.getCommentsByPost(postId, pageable);
+
+            // then
+            assertThat(responses.getContent().getFirst().content()).isEqualTo("삭제된 댓글입니다.");
+            assertThat(responses.getContent().getFirst().status()).isEqualTo("DELETED");
+        }
+    }
 
     @Nested
     @DisplayName("댓글 작성 테스트")

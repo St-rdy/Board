@@ -15,12 +15,60 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+
+    @Transactional(readOnly = true)
+    public Page<CommentResponse> getCommentsByPost(Long postId, Pageable pageable) {
+        // 루트 댓글 페이징 조회
+        Page<Comment> rootComments = commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(postId, pageable);
+        
+        //댓글 없음
+        if (rootComments.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 현재 페이지의 루트 댓글 ID 추출
+        List<Long> rootIds = rootComments.getContent().stream()
+                .map(Comment::getId)
+                .toList();
+
+        // 추출된 루트 댓글들에 속하는 대댓글만 조회
+        List<Comment> replies = commentRepository.findByParentIdInOrderByCreatedAtAsc(rootIds);
+        
+        // 대댓글을 부모 ID별로 그룹화
+        Map<Long, List<CommentResponse>> repliesByParentId = replies.stream()
+                .collect(Collectors.groupingBy(
+                        reply -> reply.getParent().getId(),
+                        Collectors.mapping(
+                                reply -> CommentResponse.from(reply, "익명", null), // TODO: 실제 닉네임 연동 필요
+                                Collectors.toList()
+                        )
+                ));
+
+        // 루트 댓글에 대댓글 매핑
+        List<CommentResponse> content = rootComments.getContent().stream()
+                .map(root -> {
+                    CommentResponse response = CommentResponse.from(root, "익명", null); // TODO: 실제 닉네임 연동 필요
+                    List<CommentResponse> childReplies = repliesByParentId.getOrDefault(root.getId(), List.of());
+                    response.replies().addAll(childReplies);
+                    return response;
+                })
+                .toList();
+
+        return new PageImpl<>(content, pageable, rootComments.getTotalElements());
+    }
 
     @Transactional
     public CommentResponse createComment(JwtUserInfo userInfo, Long postId, CommentCreateRequest request) {

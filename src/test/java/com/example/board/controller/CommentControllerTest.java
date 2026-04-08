@@ -29,11 +29,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.springframework.data.domain.PageImpl;
+import java.util.List;
+import java.util.ArrayList;
 
 @WebMvcTest(CommentController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -56,6 +58,24 @@ class CommentControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @DisplayName("댓글 조회 API 성공 테스트")
+    void getComments_Success() throws Exception {
+        // given
+        Long postId = 1L;
+        CommentResponse response = new CommentResponse(100L, 1L, "닉네임", null, "댓글 내용", "ALIVE", Instant.now(), new ArrayList<>());
+        PageImpl<CommentResponse> pageResponse = new PageImpl<>(List.of(response));
+
+        given(commentService.getCommentsByPost(eq(postId), any())).willReturn(pageResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/post/{postId}/comments", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("댓글 조회 성공"))
+                .andExpect(jsonPath("$.data.content[0].content").value("댓글 내용"));
+    }
+
+    @Test
     @DisplayName("댓글 작성 API 성공 테스트")
     @WithMockUser
     void createComment_Success() throws Exception {
@@ -71,7 +91,7 @@ class CommentControllerTest {
         );
 
         CommentCreateRequest request = new CommentCreateRequest("댓글 테스트 내용", null);
-        CommentResponse response = new CommentResponse(100L, userId, nickname, profileUrl, "댓글 테스트 내용", "ALIVE", Instant.now());
+        CommentResponse response = new CommentResponse(100L, userId, nickname, profileUrl, "댓글 테스트 내용", "ALIVE", Instant.now(), new ArrayList<>());
 
         given(commentService.createComment(eq(userInfo), eq(postId), any(CommentCreateRequest.class)))
                 .willReturn(response);
@@ -121,7 +141,7 @@ class CommentControllerTest {
         );
 
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글 내용");
-        CommentResponse response = new CommentResponse(commentId, userId, nickname, profileUrl, "수정된 댓글 내용", "ALIVE", Instant.now());
+        CommentResponse response = new CommentResponse(commentId, userId, nickname, profileUrl, "수정된 댓글 내용", "ALIVE", Instant.now(), new ArrayList<>());
 
         given(commentService.updateComment(eq(userInfo), eq(commentId), any(CommentUpdateRequest.class)))
                 .willReturn(response);

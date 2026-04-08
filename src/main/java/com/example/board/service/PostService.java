@@ -1,7 +1,9 @@
 package com.example.board.service;
 
+import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
@@ -24,9 +26,29 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
+    private final CommentService commentService;
 
-    // 게시글 목록 조회 (필터링, 페이징)
-    @Transactional(readOnly = true)
+    // 게시글 상세 조회
+    @Transactional
+    public PostDetailResponse getPostDetail(Long postId, Pageable pageable) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        // 조회수 증가
+        post.increaseViewCount();
+
+        // 이미지 URL 리스트 조회
+        List<String> imageUrls = imageRepository.findAllByPostId(postId).stream()
+                .map(Image::getImageUrl)
+                .toList();
+
+        // 댓글 페이징 조회
+        Page<CommentResponse> comments = commentService.getCommentsByPost(postId, pageable);
+
+        return PostDetailResponse.of(post, imageUrls, comments);
+    }
+
+    // 게시글 목록 조회 (필터링, 페이징)    @Transactional(readOnly = true)
     public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
         Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
         return postPage.map(PostResponse::from);
