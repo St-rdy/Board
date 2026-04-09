@@ -45,6 +45,9 @@ public class PostServiceTest {
     @Mock
     private CommentService commentService;
 
+    @Mock
+    private ImageService imageService;
+
     @InjectMocks
     private PostService postService;
 
@@ -357,5 +360,57 @@ public class PostServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TITLE_REQUIRED);
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 성공 테스트")
+    void deletePost_success() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        // when
+        postService.deletePost(userId, postId);
+
+        // then
+        verify(imageService, times(1)).deleteByPostId(postId);
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 실패 - 권한 없음")
+    void deletePost_fail_forbidden() {
+        // given
+        Long userId = 1L;
+        Long otherUserId = 2L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(otherUserId, postId, "제목", "내용");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> postService.deletePost(userId, postId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 실패 - 존재하지 않는 게시글")
+    void deletePost_fail_notFound() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> postService.deletePost(userId, postId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.NOT_FOUND);
     }
 }

@@ -35,8 +35,7 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -212,6 +211,28 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.data.title").value("수정된 제목"))
                 .andExpect(jsonPath("$.message").value("게시글 수정 성공"));
     }
+
+    @Test
+    @DisplayName("게시글 삭제 API 성공 테스트")
+    void deletePost_success() throws Exception {
+        // given
+        Long postId = 1L;
+
+        // SecurityContext에 Mock 유저 주입
+        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+        );
+
+        // when and then
+        mockMvc.perform(delete("/api/v1/post/{postId}", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("게시글이 삭제 성공"));
+    }
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
