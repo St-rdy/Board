@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -27,6 +26,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
     private final CommentService commentService;
+    private final ImageService imageService;
 
     // 게시글 상세 조회
     @Transactional
@@ -48,7 +48,8 @@ public class PostService {
         return PostDetailResponse.of(post, imageUrls, comments);
     }
 
-    // 게시글 목록 조회 (필터링, 페이징)    @Transactional(readOnly = true)
+    // 게시글 목록 조회 (필터링, 페이징)
+    @Transactional(readOnly = true)
     public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
         Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
         return postPage.map(PostResponse::from);
@@ -106,6 +107,21 @@ public class PostService {
         post.update(postUpdateRequest.category(), postUpdateRequest.title(), postUpdateRequest.content(), thumbnail);
 
         return PostResponse.from(post);
+    }
+
+    // 게시글 삭제
+    @Transactional
+    public void deletePost(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        if (!post.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        // 이미지 정보 삭제
+        imageService.deleteByPostId(postId);
+
+        postRepository.delete(post);
     }
 
     // 제목, 내용 무결성 검사

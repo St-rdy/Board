@@ -64,4 +64,14 @@ public class PostController {
         PostResponse response = postService.updatePost(userInfo.userId(), postId, postUpdateRequest);
         return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공", response));
     }
+
+    //게시글 삭제
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> deletePost(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long postId) {
+
+        postService.deletePost(userInfo.userId(), postId);
+        return ResponseEntity.ok(ApiResponse.success("게시글이 삭제 성공",null));
+    }
 }

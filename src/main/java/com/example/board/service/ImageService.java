@@ -46,6 +46,13 @@ public class ImageService {
         return ImageUploadResponse.of(savedImage.getId(), savedImage.getImageUrl());
     }
 
+    @Transactional
+    public void deleteByPostId(Long postId) {
+        // TODO: 나중에 S3 등 파일 스토리지 연동 시 여기서 실제 파일 삭제 로직 추가
+        List<Image> images = imageRepository.findAllByPostId(postId);
+        imageRepository.deleteAll(images);
+    }
+
     private String uploadFile(MultipartFile file, String storageFileName) {
         return "https://추후.오브젝트스토리지.연동후/개발/"+storageFileName;
     }
