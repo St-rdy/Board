@@ -1,0 +1,48 @@
+package com.example.board.security;
+
+import com.example.board.dto.JwtUserInfo;
+import com.example.board.exception.BusinessException;
+import com.example.board.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+
+@Component
+public class JwtUtil {
+    private final SecretKey secretKey;
+
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+    // 토큰 위조 및 만료 검증
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    // 토큰에서 유저 정보 추출
+    public JwtUserInfo getUserIdFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        
+        Long userId = claims.get("userId", Long.class);
+        String nickname = claims.get("nickname", String.class);
+        String profileUrl = claims.get("profileUrl", String.class);
+
+        return new JwtUserInfo(userId, nickname, profileUrl);
+    }
+
+}
