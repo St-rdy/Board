@@ -81,6 +81,7 @@ public class PostController {
             @AuthenticationPrincipal JwtUserInfo userInfo,
             @PathVariable Long postId) {
 
+        postService.togglePostScrap(userInfo.userId(), postId);
         return ResponseEntity.ok(ApiResponse.success("게시글 스크랩 토글 성공", null));
     }
 }
