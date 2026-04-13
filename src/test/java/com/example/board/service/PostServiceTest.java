@@ -9,6 +9,7 @@ import com.example.board.entity.Post;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
+import com.example.board.repository.PostLikeRepository;
 import com.example.board.repository.PostRepository;
 import com.example.board.support.ImageFixture;
 import com.example.board.support.PostFixture;
@@ -45,8 +46,54 @@ public class PostServiceTest {
     @Mock
     private CommentService commentService;
 
+    @Mock
+    private PostLikeRepository postLikeRepository;
+
     @InjectMocks
     private PostService postService;
+
+    @Test
+    @DisplayName("게시글 좋아요 성공 - 좋아요 추가")
+    void togglePostLike_addSuccess() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+        int initialLikeCount = post.getLikeCount();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postLikeRepository.existsById(any())).thenReturn(false);
+
+        // when
+        postService.togglePostLike(userId, postId);
+
+        // then
+        Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount + 1);
+        verify(postLikeRepository, times(1)).save(any());
+        verify(postLikeRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("게시글 좋아요 성공 - 좋아요 취소")
+    void togglePostLike_removeSuccess() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+        post.increaseLikeCount(); // 초기 좋아요 1
+        int initialLikeCount = post.getLikeCount();
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postLikeRepository.existsById(any())).thenReturn(true);
+
+        // when
+        postService.togglePostLike(userId, postId);
+
+        // then
+        Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount - 1);
+        verify(postLikeRepository, times(1)).deleteById(any());
+        verify(postLikeRepository, never()).save(any());
+    }
 
     @Test
     @DisplayName("게시글 상세 조회 성공 - 조회수 증가 및 댓글 포함")
