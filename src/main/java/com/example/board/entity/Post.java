@@ -48,6 +48,10 @@ public class Post {
     @ColumnDefault("0")
     private int likeCount = 0;
 
+    @Column(name = "scrap_count", nullable = false)
+    @ColumnDefault("0")
+    private int scrapCount = 0;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -99,6 +103,16 @@ public class Post {
     public void decreaseLikeCount() {
         if (this.likeCount > 0) {
             this.likeCount--;
+        }
+    }
+
+    public void increaseScrapCount() {
+        this.scrapCount++;
+    }
+
+    public void decreaseScrapCount() {
+        if (this.scrapCount > 0) {
+            this.scrapCount--;
         }
     }
 }

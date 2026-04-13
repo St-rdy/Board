@@ -5,15 +5,13 @@ import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
-import com.example.board.entity.Image;
-import com.example.board.entity.PostLike;
-import com.example.board.entity.PostLikeId;
+import com.example.board.entity.*;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostLikeRepository;
 import com.example.board.repository.PostRepository;
-import com.example.board.entity.Post;
+import com.example.board.repository.PostScrapRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -31,6 +28,7 @@ public class PostService {
     private final ImageRepository imageRepository;
     private final CommentService commentService;
     private final PostLikeRepository postLikeRepository;
+    private final PostScrapRepository postScrapRepository;
 
     // 게시글 상세 조회
     @Transactional
@@ -132,6 +130,28 @@ public class PostService {
             postLike.setPost(post);
             postLikeRepository.save(postLike);
             post.increaseLikeCount();
+        }
+    }
+
+    //게시글 스크랩
+    @Transactional
+    public void togglePostScrap(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        PostScrapId postScrapId = new PostScrapId();
+        postScrapId.setUserId(userId);
+        postScrapId.setPostId(postId);
+
+        if (postScrapRepository.existsById(postScrapId)) {
+            postScrapRepository.deleteById(postScrapId);
+            post.decreaseScrapCount();
+        } else {
+            PostScrap postScrap = new PostScrap();
+            postScrap.setId(postScrapId);
+            postScrap.setPost(post);
+            postScrapRepository.save(postScrap);
+            post.increaseScrapCount();
         }
     }
 
