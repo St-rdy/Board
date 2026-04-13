@@ -6,9 +6,12 @@ import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
+import com.example.board.entity.PostLike;
+import com.example.board.entity.PostLikeId;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
+import com.example.board.repository.PostLikeRepository;
 import com.example.board.repository.PostRepository;
 import com.example.board.entity.Post;
 import lombok.AllArgsConstructor;
@@ -27,6 +30,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
     private final CommentService commentService;
+    private final PostLikeRepository postLikeRepository;
 
     // 게시글 상세 조회
     @Transactional
@@ -48,7 +52,8 @@ public class PostService {
         return PostDetailResponse.of(post, imageUrls, comments);
     }
 
-    // 게시글 목록 조회 (필터링, 페이징)    @Transactional(readOnly = true)
+    // 게시글 목록 조회 (필터링, 페이징)
+    @Transactional(readOnly = true)
     public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
         Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
         return postPage.map(PostResponse::from);
@@ -106,6 +111,28 @@ public class PostService {
         post.update(postUpdateRequest.category(), postUpdateRequest.title(), postUpdateRequest.content(), thumbnail);
 
         return PostResponse.from(post);
+    }
+
+    //게시글 좋아요
+    @Transactional
+    public void togglePostLike(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        PostLikeId postLikeId = new PostLikeId();
+        postLikeId.setUserId(userId);
+        postLikeId.setPostId(postId);
+
+        if (postLikeRepository.existsById(postLikeId)) {
+            postLikeRepository.deleteById(postLikeId);
+            post.decreaseLikeCount();
+        } else {
+            PostLike postLike = new PostLike();
+            postLike.setId(postLikeId);
+            postLike.setPost(post);
+            postLikeRepository.save(postLike);
+            post.increaseLikeCount();
+        }
     }
 
     // 제목, 내용 무결성 검사
