@@ -13,6 +13,7 @@ import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
 import com.example.board.repository.PostLikeRepository;
 import com.example.board.repository.PostRepository;
+import com.example.board.repository.PostScrapRepository;
 import com.example.board.entity.Post;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class PostService {
     private final ImageRepository imageRepository;
     private final CommentService commentService;
     private final PostLikeRepository postLikeRepository;
+    private final PostScrapRepository postScrapRepository;
 
     // 게시글 상세 조회
     @Transactional
@@ -133,6 +135,12 @@ public class PostService {
             postLikeRepository.save(postLike);
             post.increaseLikeCount();
         }
+    }
+
+    //게시글 스크랩
+    @Transactional
+    public void togglePostScrap(Long userId, Long postId) {
+        // TDD를 위해 시그니처만 생성
     }
 
     // 제목, 내용 무결성 검사

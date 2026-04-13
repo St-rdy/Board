@@ -80,6 +80,25 @@ public class PostControllerTest {
     }
 
     @Test
+    @DisplayName("게시글 스크랩 토글 API 성공 테스트")
+    void togglePostScrap_success() throws Exception {
+        // given
+        Long postId = 1L;
+        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+        );
+
+        // when and then
+        mockMvc.perform(post("/api/v1/post/{postId}/scrap", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("게시글 스크랩 토글 성공"));
+    }
+
+    @Test
     @DisplayName("게시글 상세 조회 API 성공 테스트")
     void getPostDetail_success() throws Exception {
         // given

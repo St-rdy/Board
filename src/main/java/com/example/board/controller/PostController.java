@@ -74,4 +74,13 @@ public class PostController {
         postService.togglePostLike(userInfo.userId(), postId);
         return ResponseEntity.ok(ApiResponse.success("게시글 좋아요 토글 성공", null));
     }
+
+    // 게시글 스크랩 토글 API
+    @PostMapping("/{postId}/scrap")
+    public ResponseEntity<ApiResponse<Void>> togglePostScrap(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long postId) {
+
+        return ResponseEntity.ok(ApiResponse.success("게시글 스크랩 토글 성공", null));
+    }
 }
