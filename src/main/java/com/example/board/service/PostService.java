@@ -3,6 +3,7 @@ package com.example.board.service;
 import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.*;
@@ -14,6 +15,7 @@ import com.example.board.repository.PostRepository;
 import com.example.board.repository.PostScrapRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,9 +54,10 @@ public class PostService {
 
     // 게시글 목록 조회 (필터링, 페이징)
     @Transactional(readOnly = true)
-    public Page<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
+    public PageResponse<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
         Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
-        return postPage.map(PostResponse::from);
+        Page<PostResponse> postResponsePage = postPage.map(PostResponse::from);
+        return new PageResponse<>(postResponsePage);
     }
 
     // 게시글 생성

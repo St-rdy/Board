@@ -1,8 +1,9 @@
 package com.example.board.controller;
 
 import com.example.board.dto.JwtUserInfo;
-import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PageResponse;
+import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.service.PostService;
@@ -158,8 +159,9 @@ public class PostControllerTest {
                 null
         );
         Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
+        PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
 
-        when(postService.getPosts(any(), any(), any(Pageable.class))).thenReturn(page);
+        when(postService.getPosts(any(), any(), any(Pageable.class))).thenReturn(pageResponse);
 
         // when and then
         mockMvc.perform(get("/api/v1/post")
@@ -193,8 +195,9 @@ public class PostControllerTest {
                 null
         );
         Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
+        PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
 
-        when(postService.getPosts(eq(category), eq(keyword), any(Pageable.class))).thenReturn(page);
+        when(postService.getPosts(eq(category), eq(keyword), any(Pageable.class))).thenReturn(pageResponse);
 
         // when and then
         mockMvc.perform(get("/api/v1/post")
