@@ -35,8 +35,7 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,6 +59,44 @@ public class PostControllerTest {
 
     @MockitoBean
     private JwtFilter jwtFilter;
+
+    @Test
+    @DisplayName("게시글 좋아요 토글 API 성공 테스트")
+    void togglePostLike_success() throws Exception {
+        // given
+        Long postId = 1L;
+        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+        );
+
+        // when and then
+        mockMvc.perform(post("/api/v1/post/{postId}/like", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("게시글 좋아요 토글 성공"));
+    }
+
+    @Test
+    @DisplayName("게시글 스크랩 토글 API 성공 테스트")
+    void togglePostScrap_success() throws Exception {
+        // given
+        Long postId = 1L;
+        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+        );
+
+        // when and then
+        mockMvc.perform(post("/api/v1/post/{postId}/scrap", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("게시글 스크랩 토글 성공"));
+    }
 
     @Test
     @DisplayName("게시글 상세 조회 API 성공 테스트")

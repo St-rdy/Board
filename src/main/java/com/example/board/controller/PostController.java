@@ -64,4 +64,24 @@ public class PostController {
         PostResponse response = postService.updatePost(userInfo.userId(), postId, postUpdateRequest);
         return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공", response));
     }
+
+    // 게시글 좋아요 토글 API
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<ApiResponse<Void>> togglePostLike(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long postId) {
+
+        postService.togglePostLike(userInfo.userId(), postId);
+        return ResponseEntity.ok(ApiResponse.success("게시글 좋아요 토글 성공", null));
+    }
+
+    // 게시글 스크랩 토글 API
+    @PostMapping("/{postId}/scrap")
+    public ResponseEntity<ApiResponse<Void>> togglePostScrap(
+            @AuthenticationPrincipal JwtUserInfo userInfo,
+            @PathVariable Long postId) {
+
+        postService.togglePostScrap(userInfo.userId(), postId);
+        return ResponseEntity.ok(ApiResponse.success("게시글 스크랩 토글 성공", null));
+    }
 }
