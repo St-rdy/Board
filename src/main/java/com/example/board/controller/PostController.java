@@ -4,6 +4,7 @@ import com.example.board.dto.ApiResponse;
 import com.example.board.dto.JwtUserInfo;
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.service.PostService;
@@ -35,12 +36,12 @@ public class PostController {
 
     // 게시글 목록 조회 API
     @GetMapping()
-    public ResponseEntity<ApiResponse<Page<PostResponse>>> getPosts(
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> getPosts(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
             Pageable pageable) {
 
-        Page<PostResponse> response = postService.getPosts(category, keyword, pageable);
+        PageResponse<PostResponse> response = postService.getPosts(category, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success("게시글 목록 조회 성공", response));
     }
 

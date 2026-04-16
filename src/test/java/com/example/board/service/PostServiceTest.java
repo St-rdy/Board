@@ -2,6 +2,7 @@ package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
+import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.entity.Image;
@@ -186,7 +187,7 @@ public class PostServiceTest {
         when(postRepository.findAllByFilters(null, null, pageable)).thenReturn(postPage);
 
         // when
-        Page<PostResponse> result = postService.getPosts(null, null, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(null, null, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).hasSize(2);
@@ -206,7 +207,7 @@ public class PostServiceTest {
         when(postRepository.findAllByFilters(eq(category), any(), any(Pageable.class))).thenReturn(postPage);
 
         // when
-        Page<PostResponse> result = postService.getPosts(category, null, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(category, null, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).hasSize(1);
@@ -225,7 +226,7 @@ public class PostServiceTest {
         when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(postPage);
 
         // when
-        Page<PostResponse> result = postService.getPosts(null, keyword, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(null, keyword, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).hasSize(1);
@@ -243,7 +244,7 @@ public class PostServiceTest {
         when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(emptyPage);
 
         // when
-        Page<PostResponse> result = postService.getPosts(null, keyword, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(null, keyword, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).isEmpty();
