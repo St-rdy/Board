@@ -16,7 +16,7 @@ public class PostFixture {
     public static Post createPost(Long userId, Long postId, String title, String content) {
         Post post = Post.builder()
                 .userId(userId)
-                .categoryJson(Map.of("name", "공시생 잡담"))
+                .categoryJson(Map.of("regions", "Seoul", "subjects", "Mathematics"))
                 .title(title)
                 .content(content)
                 .build();
@@ -24,10 +24,10 @@ public class PostFixture {
         return post;
     }
 
-    public static Post createPostWithCategory(Long userId, Long postId, String category, String title, String content) {
+    public static Post createPostWithRegionSubject(Long userId, Long postId, String region, String subject, String title, String content) {
         Post post = Post.builder()
                 .userId(userId)
-                .categoryJson(Map.of("name", category))
+                .categoryJson(Map.of("regions", region, "subjects", subject))
                 .title(title)
                 .content(content)
                 .build();

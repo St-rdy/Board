@@ -1,6 +1,7 @@
 package com.example.board.service;
 
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostSearchRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
@@ -183,68 +184,56 @@ public class PostServiceTest {
                 PostFixture.createPost(1L, 102L, "제목2", "내용2")
         );
         Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
+        PostSearchRequest request = new PostSearchRequest();
 
-        when(postRepository.findAllByFilters(null, null, pageable)).thenReturn(postPage);
+        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
 
         // when
-        PageResponse<PostResponse> result = postService.getPosts(null, null, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).hasSize(2);
         Assertions.assertThat(result.getTotalElements()).isEqualTo(2);
-        verify(postRepository, times(1)).findAllByFilters(null, null, pageable);
+        verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
     }
 
     @Test
-    @DisplayName("게시글 목록 조회 성공 - 카테고리 필터링")
-    void getPosts_success_categoryFilter() {
+    @DisplayName("게시글 목록 조회 성공 - 검색 조건 있을 때 Repository에 위임")
+    void getPosts_success_withFilters() {
         // given
-        String category = "공시생 잡담";
         Pageable pageable = PageRequest.of(0, 10);
-        Post post = PostFixture.createPostWithCategory(1L, 101L, category, "제목", "내용");
+        Post post = PostFixture.createPostWithRegionSubject(1L, 101L, "Seoul", "Mathematics", "개발 질문입니다", "내용");
         Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
 
-        when(postRepository.findAllByFilters(eq(category), any(), any(Pageable.class))).thenReturn(postPage);
+        PostSearchRequest request = new PostSearchRequest();
+        request.setRegion("Seoul");
+        request.setSubject("Mathematics");
+        request.setKeyword("개발");
+
+        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
 
         // when
-        PageResponse<PostResponse> result = postService.getPosts(category, null, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).hasSize(1);
-        Assertions.assertThat(result.getContent().getFirst().category().get("name")).isEqualTo(category);
-    }
-
-    @Test
-    @DisplayName("게시글 목록 조회 성공 - 키워드 검색")
-    void getPosts_success_searchKeyword() {
-        // given
-        String keyword = "개발";
-        Pageable pageable = PageRequest.of(0, 10);
-        Post post = PostFixture.createPost(1L, 101L, "개발 질문입니다", "내용");
-        Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
-
-        when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(postPage);
-
-        // when
-        PageResponse<PostResponse> result = postService.getPosts(null, keyword, pageable);
-
-        // then
-        Assertions.assertThat(result.getContent()).hasSize(1);
-        Assertions.assertThat(result.getContent().getFirst().title()).contains(keyword);
+        verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
     }
 
     @Test
     @DisplayName("게시글 목록 조회 성공 - 검색 결과가 없는 경우 빈 페이지 반환")
     void getPosts_success_emptyResult() {
         // given
-        String keyword = "존재하지않는키워드";
         Pageable pageable = PageRequest.of(0, 10);
         Page<Post> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-        when(postRepository.findAllByFilters(any(), eq(keyword), any(Pageable.class))).thenReturn(emptyPage);
+        PostSearchRequest request = new PostSearchRequest();
+        request.setKeyword("존재하지않는키워드");
+
+        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(emptyPage);
 
         // when
-        PageResponse<PostResponse> result = postService.getPosts(null, keyword, pageable);
+        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
 
         // then
         Assertions.assertThat(result.getContent()).isEmpty();
