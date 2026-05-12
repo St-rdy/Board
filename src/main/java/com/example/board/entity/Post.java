@@ -28,7 +28,7 @@ public class Post {
     private Long id;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "category_json", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "category_json", nullable = false)
     private Map<String, Object> categoryJson;
 
     @Column(name = "user_id", nullable = false)
