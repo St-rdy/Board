@@ -1,6 +1,7 @@
 package com.example.board.controller;
 
 import com.example.board.dto.JwtUserInfo;
+import com.example.board.dto.post.request.PostSearchRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
@@ -149,7 +150,7 @@ public class PostControllerTest {
         Pageable pageable = PageRequest.of(0, 10);
         PostResponse postResponse = new PostResponse(
                 1L,
-                Map.of("name", "공시생 잡담"),
+                Map.of("regions", "Seoul", "subjects", "Mathematics"),
                 "테스트 제목",
                 "테스트 내용",
                 1L,
@@ -161,7 +162,7 @@ public class PostControllerTest {
         Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
         PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
 
-        when(postService.getPosts(any(), any(), any(Pageable.class))).thenReturn(pageResponse);
+        when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
 
         // when and then
         mockMvc.perform(get("/api/v1/post")
@@ -173,19 +174,20 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 제목"))
-                .andExpect(jsonPath("$.data.content[0].category.name").value("공시생 잡담"));
+                .andExpect(jsonPath("$.data.content[0].category.regions").value("Seoul"));
     }
 
     @Test
     @DisplayName("게시글 필터링 조회 API 성공 테스트")
     void getPosts_withFilters_success() throws Exception {
         // given
-        String category = "개발 질문";
+        String region = "Seoul";
+        String subject = "Mathematics";
         String keyword = "자바";
         Pageable pageable = PageRequest.of(0, 10);
         PostResponse postResponse = new PostResponse(
                 1L,
-                Map.of("name", category),
+                Map.of("regions", region, "subjects", subject),
                 "자바 질문입니다",
                 "내용",
                 1L,
@@ -197,17 +199,19 @@ public class PostControllerTest {
         Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
         PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
 
-        when(postService.getPosts(eq(category), eq(keyword), any(Pageable.class))).thenReturn(pageResponse);
+        when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
 
         // when and then
         mockMvc.perform(get("/api/v1/post")
-                        .param("category", category)
+                        .param("region", region)
+                        .param("subject", subject)
                         .param("keyword", keyword)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].title").value("자바 질문입니다"))
-                .andExpect(jsonPath("$.data.content[0].category.name").value(category));
+                .andExpect(jsonPath("$.data.content[0].category.regions").value(region))
+                .andExpect(jsonPath("$.data.content[0].category.subjects").value(subject));
     }
 
     @Test

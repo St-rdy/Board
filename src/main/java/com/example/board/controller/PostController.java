@@ -3,13 +3,13 @@ package com.example.board.controller;
 import com.example.board.dto.ApiResponse;
 import com.example.board.dto.JwtUserInfo;
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostSearchRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
 import com.example.board.dto.post.response.PostResponse;
 import com.example.board.service.PostService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -37,11 +37,10 @@ public class PostController {
     // 게시글 목록 조회 API
     @GetMapping()
     public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> getPosts(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String keyword,
+            @ModelAttribute PostSearchRequest request,
             Pageable pageable) {
 
-        PageResponse<PostResponse> response = postService.getPosts(category, keyword, pageable);
+        PageResponse<PostResponse> response = postService.getPosts(request, pageable);
         return ResponseEntity.ok(ApiResponse.success("게시글 목록 조회 성공", response));
     }
 

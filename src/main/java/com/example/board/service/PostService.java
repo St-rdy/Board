@@ -2,6 +2,7 @@ package com.example.board.service;
 
 import com.example.board.dto.comment.response.CommentResponse;
 import com.example.board.dto.post.request.PostCreateRequest;
+import com.example.board.dto.post.request.PostSearchRequest;
 import com.example.board.dto.post.request.PostUpdateRequest;
 import com.example.board.dto.post.response.PageResponse;
 import com.example.board.dto.post.response.PostDetailResponse;
@@ -54,8 +55,8 @@ public class PostService {
 
     // 게시글 목록 조회 (필터링, 페이징)
     @Transactional(readOnly = true)
-    public PageResponse<PostResponse> getPosts(String category, String keyword, Pageable pageable) {
-        Page<Post> postPage = postRepository.findAllByFilters(category, keyword, pageable);
+    public PageResponse<PostResponse> getPosts(PostSearchRequest request, Pageable pageable) {
+        Page<Post> postPage = postRepository.findAllByFilters(request, pageable);
         Page<PostResponse> postResponsePage = postPage.map(PostResponse::from);
         return new PageResponse<>(postResponsePage);
     }
