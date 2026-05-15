@@ -109,7 +109,7 @@ public class CommentService {
         }
 
         if ("DELETED".equals(comment.getStatus())){
-            return; //예외처리를 할까..
+            throw new BusinessException(ErrorCode.ALREADY_DELETED);
         }
 
         comment.delete();
