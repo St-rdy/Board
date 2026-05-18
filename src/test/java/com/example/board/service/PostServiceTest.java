@@ -18,6 +18,7 @@ import com.example.board.support.ImageFixture;
 import com.example.board.support.PostFixture;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
+
     @Mock
     private PostRepository postRepository;
 
@@ -58,388 +60,416 @@ public class PostServiceTest {
     @InjectMocks
     private PostService postService;
 
-    @Test
-    @DisplayName("게시글 스크랩 성공 - 스크랩 추가")
-    void togglePostScrap_addSuccess() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        int initialScrapCount = post.getScrapCount();
+    @Nested
+    @DisplayName("게시글 좋아요 토글")
+    class TogglePostLike {
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postScrapRepository.existsById(any())).thenReturn(false);
+        @Test
+        @DisplayName("성공 - 좋아요 추가")
+        void togglePostLike_addSuccess() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            int initialLikeCount = post.getLikeCount();
 
-        // when
-        postService.togglePostScrap(userId, postId);
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(postLikeRepository.existsById(any())).thenReturn(false);
 
-        // then
-        Assertions.assertThat(post.getScrapCount()).isEqualTo(initialScrapCount + 1);
-        verify(postScrapRepository, times(1)).save(any());
-        verify(postScrapRepository, never()).deleteById(any());
+            // when
+            postService.togglePostLike(userId, postId);
+
+            // then
+            Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount + 1);
+            verify(postLikeRepository, times(1)).save(any());
+            verify(postLikeRepository, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 좋아요 취소")
+        void togglePostLike_removeSuccess() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            post.increaseLikeCount(); // 초기 좋아요 1
+            int initialLikeCount = post.getLikeCount();
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(postLikeRepository.existsById(any())).thenReturn(true);
+
+            // when
+            postService.togglePostLike(userId, postId);
+
+            // then
+            Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount - 1);
+            verify(postLikeRepository, times(1)).deleteById(any());
+            verify(postLikeRepository, never()).save(any());
+        }
     }
 
-    @Test
-    @DisplayName("게시글 스크랩 성공 - 스크랩 취소")
-    void togglePostScrap_removeSuccess() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        post.increaseScrapCount(); // 초기 스크랩 1
-        int initialScrapCount = post.getScrapCount();
+    @Nested
+    @DisplayName("게시글 스크랩 토글")
+    class TogglePostScrap {
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postScrapRepository.existsById(any())).thenReturn(true);
+        @Test
+        @DisplayName("성공 - 스크랩 추가")
+        void togglePostScrap_addSuccess() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            int initialScrapCount = post.getScrapCount();
 
-        // when
-        postService.togglePostScrap(userId, postId);
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(postScrapRepository.existsById(any())).thenReturn(false);
 
-        // then
-        Assertions.assertThat(post.getScrapCount()).isEqualTo(initialScrapCount - 1);
-        verify(postScrapRepository, times(1)).deleteById(any());
-        verify(postScrapRepository, never()).save(any());
+            // when
+            postService.togglePostScrap(userId, postId);
+
+            // then
+            Assertions.assertThat(post.getScrapCount()).isEqualTo(initialScrapCount + 1);
+            verify(postScrapRepository, times(1)).save(any());
+            verify(postScrapRepository, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 스크랩 취소")
+        void togglePostScrap_removeSuccess() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            post.increaseScrapCount(); // 초기 스크랩 1
+            int initialScrapCount = post.getScrapCount();
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(postScrapRepository.existsById(any())).thenReturn(true);
+
+            // when
+            postService.togglePostScrap(userId, postId);
+
+            // then
+            Assertions.assertThat(post.getScrapCount()).isEqualTo(initialScrapCount - 1);
+            verify(postScrapRepository, times(1)).deleteById(any());
+            verify(postScrapRepository, never()).save(any());
+        }
     }
 
-    @Test
-    @DisplayName("게시글 좋아요 성공 - 좋아요 추가")
-    void togglePostLike_addSuccess() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        int initialLikeCount = post.getLikeCount();
+    @Nested
+    @DisplayName("게시글 상세 조회")
+    class GetPostDetail {
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postLikeRepository.existsById(any())).thenReturn(false);
+        @Test
+        @DisplayName("성공 - 조회수 증가 및 댓글 포함")
+        void getPostDetail_success() {
+            // given
+            Long postId = 100L;
+            Long userId = 1L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            int initialViewCount = post.getViewCount();
 
-        // when
-        postService.togglePostLike(userId, postId);
+            Pageable pageable = PageRequest.of(0, 20);
+            Page<com.example.board.dto.comment.response.CommentResponse> commentPage = new PageImpl<>(List.of(), pageable, 0);
 
-        // then
-        Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount + 1);
-        verify(postLikeRepository, times(1)).save(any());
-        verify(postLikeRepository, never()).deleteById(any());
+            List<Image> images = List.of(ImageFixture.createMappedImage(userId, postId));
+            List<String> imageUrls = images.stream().map(Image::getImageUrl).toList();
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(imageRepository.findAllByPostId(postId)).thenReturn(images);
+            when(commentService.getCommentsByPost(eq(postId), any(Pageable.class))).thenReturn(commentPage);
+
+            // when
+            PostDetailResponse result = postService.getPostDetail(postId, pageable);
+
+            // then
+            Assertions.assertThat(result.id()).isEqualTo(postId);
+            Assertions.assertThat(result.viewCount()).isEqualTo(initialViewCount + 1);
+            Assertions.assertThat(result.imageUrls()).containsExactlyElementsOf(imageUrls);
+            verify(postRepository, times(1)).findById(postId);
+            verify(commentService, times(1)).getCommentsByPost(eq(postId), any(Pageable.class));
+        }
     }
 
-    @Test
-    @DisplayName("게시글 좋아요 성공 - 좋아요 취소")
-    void togglePostLike_removeSuccess() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        post.increaseLikeCount(); // 초기 좋아요 1
-        int initialLikeCount = post.getLikeCount();
+    @Nested
+    @DisplayName("게시글 목록 조회")
+    class GetPosts {
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postLikeRepository.existsById(any())).thenReturn(true);
+        @Test
+        @DisplayName("성공 - 페이징 처리")
+        void getPosts_success_paging() {
+            // given
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Post> posts = Arrays.asList(
+                    PostFixture.createPost(1L, 101L, "제목1", "내용1"),
+                    PostFixture.createPost(1L, 102L, "제목2", "내용2")
+            );
+            Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
+            PostSearchRequest request = new PostSearchRequest();
 
-        // when
-        postService.togglePostLike(userId, postId);
+            when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
 
-        // then
-        Assertions.assertThat(post.getLikeCount()).isEqualTo(initialLikeCount - 1);
-        verify(postLikeRepository, times(1)).deleteById(any());
-        verify(postLikeRepository, never()).save(any());
+            // when
+            PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+
+            // then
+            Assertions.assertThat(result.getContent()).hasSize(2);
+            Assertions.assertThat(result.getTotalElements()).isEqualTo(2);
+            verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 검색 조건 있을 때 Repository에 위임")
+        void getPosts_success_withFilters() {
+            // given
+            Pageable pageable = PageRequest.of(0, 10);
+            Post post = PostFixture.createPostWithRegionSubject(1L, 101L, "Seoul", "Mathematics", "개발 질문입니다", "내용");
+            Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
+
+            PostSearchRequest request = new PostSearchRequest();
+            request.setRegion("Seoul");
+            request.setSubject("Mathematics");
+            request.setKeyword("개발");
+
+            when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
+
+            // when
+            PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+
+            // then
+            Assertions.assertThat(result.getContent()).hasSize(1);
+            verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 검색 결과가 없는 경우 빈 페이지 반환")
+        void getPosts_success_emptyResult() {
+            // given
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Post> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+            PostSearchRequest request = new PostSearchRequest();
+            request.setKeyword("존재하지않는키워드");
+
+            when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(emptyPage);
+
+            // when
+            PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+
+            // then
+            Assertions.assertThat(result.getContent()).isEmpty();
+            Assertions.assertThat(result.getTotalElements()).isEqualTo(0);
+        }
     }
 
-    @Test
-    @DisplayName("게시글 상세 조회 성공 - 조회수 증가 및 댓글 포함")
-    void getPostDetail_success() {
-        // given
-        Long postId = 100L;
-        Long userId = 1L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        int initialViewCount = post.getViewCount();
+    @Nested
+    @DisplayName("게시글 생성")
+    class CreatePost {
 
-        Pageable pageable = PageRequest.of(0, 20);
-        Page<com.example.board.dto.comment.response.CommentResponse> commentPage = new PageImpl<>(List.of(), pageable, 0);
+        @Test
+        @DisplayName("성공")
+        void createPost_success() {
+            // given
+            Long userId = 1L;
+            Long expectedPostId = 100L;
 
-        List<Image> images = List.of(ImageFixture.createMappedImage(userId, postId));
-        List<String> imageUrls = images.stream().map(Image::getImageUrl).toList();
+            PostCreateRequest postCreateRequest = PostFixture.createPostRequest();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(imageRepository.findAllByPostId(postId)).thenReturn(images);
-        when(commentService.getCommentsByPost(eq(postId), any(Pageable.class))).thenReturn(commentPage);
+            List<Image> mockImages = List.of(
+                    ImageFixture.createImageWithUserId(userId),
+                    ImageFixture.createImageWithUserId(userId),
+                    ImageFixture.createImageWithUserId(userId)
+            );
+            when(imageRepository.findAllById(postCreateRequest.imageIds())).thenReturn(mockImages);
 
-        // when
-        PostDetailResponse result = postService.getPostDetail(postId, pageable);
+            Post savedPost = postCreateRequest.toEntity(userId);
+            ReflectionTestUtils.setField(savedPost, "id", expectedPostId);
 
-        // then
-        Assertions.assertThat(result.id()).isEqualTo(postId);
-        Assertions.assertThat(result.viewCount()).isEqualTo(initialViewCount + 1);
-        Assertions.assertThat(result.imageUrls()).containsExactlyElementsOf(imageUrls);
-        verify(postRepository, times(1)).findById(postId);
-        verify(commentService, times(1)).getCommentsByPost(eq(postId), any(Pageable.class));
+            when(postRepository.save(any(Post.class))).thenReturn(savedPost);
+
+            // when
+            PostResponse result = postService.createPost(userId, postCreateRequest);
+
+            // then
+            Assertions.assertThat(result.id()).isEqualTo(expectedPostId);
+            verify(postRepository, times(1)).save(any(Post.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 비어있는 제목을 입력하면 예외")
+        void createPost_fail_emptyTitle() {
+            // given
+            PostCreateRequest badRequest = PostFixture.createPostRequestWithoutTitle();
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TITLE_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("실패 - 비어있는 내용을 입력하면 예외가 발생한다")
+        void createPost_fail_emptyContent() {
+            // given
+            PostCreateRequest badRequest = PostFixture.createPostRequestWithoutContent();
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CONTENT_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 이미지ID를 요청한 경우")
+        void createPost_fail_imageNotFound() {
+            // given
+            PostCreateRequest badRequest = PostFixture.createPostRequest();
+
+            when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(Collections.emptyList());
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.IMAGE_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 - 다른 사용자가 올린 이미지를 사용할 경우")
+        void createPost_fail_imageAccessDenied() {
+            Long currentUserId = 1L;
+            Long otherUserId = 2L;
+
+            // given
+            PostCreateRequest badRequest = PostFixture.createPostRequest();
+
+            List<Image> mockImages = List.of(
+                    ImageFixture.createImageWithUserId(currentUserId),
+                    ImageFixture.createImageWithUserId(otherUserId),
+                    ImageFixture.createImageWithUserId(currentUserId)
+            );
+
+            when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.createPost(currentUserId, badRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.IMAGE_ACCESS_DENIED);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 게시글이 있는 이미지를 사용했을 경우")
+        void createPost_fail_alreadyMappedImage() {
+            Long userId = 1L;
+
+            // given
+            PostCreateRequest badRequest = PostFixture.createPostRequest();
+
+            List<Image> mockImages = List.of(
+                    ImageFixture.createImageWithUserId(userId),
+                    ImageFixture.createMappedImage(userId, 100L),
+                    ImageFixture.createImageWithUserId(userId)
+            );
+
+            when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.createPost(userId, badRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.ALREADY_MAPPED_IMAGE);
+        }
     }
 
-    @Test
-    @DisplayName("게시글 목록 조회 성공 - 페이징 처리")
-    void getPosts_success_paging() {
-        // given
-        Pageable pageable = PageRequest.of(0, 10);
-        List<Post> posts = Arrays.asList(
-                PostFixture.createPost(1L, 101L, "제목1", "내용1"),
-                PostFixture.createPost(1L, 102L, "제목2", "내용2")
-        );
-        Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
-        PostSearchRequest request = new PostSearchRequest();
+    @Nested
+    @DisplayName("게시글 수정")
+    class UpdatePost {
 
-        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
+        @Test
+        @DisplayName("성공")
+        void updatePost_success() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "원본 제목", "원본 내용");
+            PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
 
-        // when
-        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
-        // then
-        Assertions.assertThat(result.getContent()).hasSize(2);
-        Assertions.assertThat(result.getTotalElements()).isEqualTo(2);
-        verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
-    }
+            List<Image> currentImages = List.of(ImageFixture.createMappedImage(userId, postId));
+            when(imageRepository.findAllByPostId(postId)).thenReturn(currentImages);
 
-    @Test
-    @DisplayName("게시글 목록 조회 성공 - 검색 조건 있을 때 Repository에 위임")
-    void getPosts_success_withFilters() {
-        // given
-        Pageable pageable = PageRequest.of(0, 10);
-        Post post = PostFixture.createPostWithRegionSubject(1L, 101L, "Seoul", "Mathematics", "개발 질문입니다", "내용");
-        Page<Post> postPage = new PageImpl<>(List.of(post), pageable, 1);
+            List<Image> newImages = List.of(
+                    ImageFixture.createImageWithUserId(userId),
+                    ImageFixture.createImageWithUserId(userId)
+            );
+            when(imageRepository.findAllById(updateRequest.imageIds())).thenReturn(newImages);
+            when(imageRepository.findById(updateRequest.imageIds().getFirst())).thenReturn(Optional.of(newImages.getFirst()));
 
-        PostSearchRequest request = new PostSearchRequest();
-        request.setRegion("Seoul");
-        request.setSubject("Mathematics");
-        request.setKeyword("개발");
+            // when
+            PostResponse result = postService.updatePost(userId, postId, updateRequest);
 
-        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(postPage);
+            // then
+            Assertions.assertThat(result.title()).isEqualTo(updateRequest.title());
+            Assertions.assertThat(result.content()).isEqualTo(updateRequest.content());
+            verify(postRepository, times(1)).findById(postId);
+        }
 
-        // when
-        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+        @Test
+        @DisplayName("실패 - 존재하지 않는 게시글")
+        void updatePost_fail_notFound() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
 
-        // then
-        Assertions.assertThat(result.getContent()).hasSize(1);
-        verify(postRepository, times(1)).findAllByFilters(any(PostSearchRequest.class), any(Pageable.class));
-    }
+            when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-    @Test
-    @DisplayName("게시글 목록 조회 성공 - 검색 결과가 없는 경우 빈 페이지 반환")
-    void getPosts_success_emptyResult() {
-        // given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Post> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+        }
 
-        PostSearchRequest request = new PostSearchRequest();
-        request.setKeyword("존재하지않는키워드");
+        @Test
+        @DisplayName("실패 - 권한 없음 (작성자가 아님)")
+        void updatePost_fail_forbidden() {
+            // given
+            Long userId = 1L;
+            Long otherUserId = 2L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(otherUserId, postId, "제목", "내용");
+            PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
 
-        when(postRepository.findAllByFilters(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(emptyPage);
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
-        // when
-        PageResponse<PostResponse> result = postService.getPosts(request, pageable);
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.FORBIDDEN);
+        }
 
-        // then
-        Assertions.assertThat(result.getContent()).isEmpty();
-        Assertions.assertThat(result.getTotalElements()).isEqualTo(0);
-    }
+        @Test
+        @DisplayName("실패 - 제목 비어있음")
+        void updatePost_fail_emptyTitle() {
+            // given
+            Long userId = 1L;
+            Long postId = 100L;
+            Post post = PostFixture.createPost(userId, postId, "제목", "내용");
+            PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest("", "내용");
 
-    @Test
-    @DisplayName("게시글 생성 성공 테스트")
-    void createPost_success() {
-        // given
-        Long userId = 1L; // 작성자 ID
-        Long expectedPostId = 100L; // 생성될 게시글 ID
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
-        PostCreateRequest postCreateRequest = PostFixture.createPostRequest();
-
-        List<Image> mockImages = List.of(
-                ImageFixture.createImageWithUserId(userId),
-                ImageFixture.createImageWithUserId(userId),
-                ImageFixture.createImageWithUserId(userId)
-        );
-        when(imageRepository.findAllById(postCreateRequest.imageIds())).thenReturn(mockImages);
-
-        Post savedPost = postCreateRequest.toEntity(userId);
-        ReflectionTestUtils.setField(savedPost, "id", expectedPostId);
-
-        // Mockito
-        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
-
-        // when
-        PostResponse result = postService.createPost(userId, postCreateRequest);
-
-        // then
-        Assertions.assertThat(result.id()).isEqualTo(expectedPostId);
-        verify(postRepository, times(1)).save(any(Post.class));
-    }
-
-    @Test
-    @DisplayName("게시글 생성 실패 - 비어있는 제목을 입력하면 예외")
-    void createPost_fail_emptyTitle() {
-        // given
-        PostCreateRequest badRequest = PostFixture.createPostRequestWithoutTitle();
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.TITLE_REQUIRED);
-    }
-
-    @Test
-    @DisplayName("게시글 생성 실패 - 비어있는 내용을 입력하면 예외가 발생한다")
-    void createPost_fail_emptyContent() {
-        // given
-        PostCreateRequest badRequest = PostFixture.createPostRequestWithoutContent();
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.CONTENT_REQUIRED);
-    }
-
-    @Test
-    @DisplayName("게시글 생성 실패 - 존재하지 않는 이미지ID를 요청한 경우")
-    void createPost_fail_imageNotFound(){
-        //given
-        PostCreateRequest badRequest = PostFixture.createPostRequest();
-
-        //when & then
-        // 요청 개수보다 적은 개수를 반환하게 하여 IMAGE_NOT_FOUND 유도
-        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(Collections.emptyList());
-
-        Assertions.assertThatThrownBy(() -> postService.createPost(1L, badRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.IMAGE_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("게시글 생성 실패 - 다른 사용자가 올린 이미지를 사용할 경우")
-    void createPost_fail_imageAccessDenied(){
-        Long currentUserId = 1L;
-        Long otherUserId = 2L;
-
-        //given
-        PostCreateRequest badRequest = PostFixture.createPostRequest();
-
-        List<Image> mockImages = List.of(
-                ImageFixture.createImageWithUserId(currentUserId),
-                ImageFixture.createImageWithUserId(otherUserId),
-                ImageFixture.createImageWithUserId(currentUserId)
-        );
-
-        //when
-        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
-
-        Assertions.assertThatThrownBy(() -> postService.createPost(currentUserId, badRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.IMAGE_ACCESS_DENIED);
-    }
-
-    @Test
-    @DisplayName("게시글 생성 실패 - 이미 게시글이 있는 이미지를 사용했을 경우")
-    void createPost_fail_alreadyMappedImage(){
-        Long userId = 1L;
-
-        //given
-        PostCreateRequest badRequest = PostFixture.createPostRequest();
-
-        List<Image> mockImages = List.of(
-                ImageFixture.createImageWithUserId(userId),
-                ImageFixture.createMappedImage(userId, 100L),
-                ImageFixture.createImageWithUserId(userId)
-        );
-
-        // when
-        when(imageRepository.findAllById(badRequest.imageIds())).thenReturn(mockImages);
-
-        Assertions.assertThatThrownBy(() -> postService.createPost(userId,badRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.ALREADY_MAPPED_IMAGE);
-    }
-
-    @Test
-    @DisplayName("게시글 수정 성공 테스트")
-    void updatePost_success() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "원본 제목", "원본 내용");
-        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
-
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        
-        List<Image> currentImages = List.of(ImageFixture.createMappedImage(userId, postId));
-        when(imageRepository.findAllByPostId(postId)).thenReturn(currentImages);
-
-        List<Image> newImages = List.of(
-                ImageFixture.createImageWithUserId(userId),
-                ImageFixture.createImageWithUserId(userId)
-        );
-        when(imageRepository.findAllById(updateRequest.imageIds())).thenReturn(newImages);
-        when(imageRepository.findById(updateRequest.imageIds().getFirst())).thenReturn(Optional.of(newImages.getFirst()));
-
-        // when
-        PostResponse result = postService.updatePost(userId, postId, updateRequest);
-
-        // then
-        Assertions.assertThat(result.title()).isEqualTo(updateRequest.title());
-        Assertions.assertThat(result.content()).isEqualTo(updateRequest.content());
-        verify(postRepository, times(1)).findById(postId);
-    }
-
-    @Test
-    @DisplayName("게시글 수정 실패 - 존재하지 않는 게시글")
-    void updatePost_fail_notFound() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
-
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("게시글 수정 실패 - 권한 없음 (작성자가 아님)")
-    void updatePost_fail_forbidden() {
-        // given
-        Long userId = 1L;
-        Long otherUserId = 2L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(otherUserId, postId, "제목", "내용");
-        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest();
-
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FORBIDDEN);
-    }
-
-    @Test
-    @DisplayName("게시글 수정 실패 - 제목 비어있음")
-    void updatePost_fail_emptyTitle() {
-        // given
-        Long userId = 1L;
-        Long postId = 100L;
-        Post post = PostFixture.createPost(userId, postId, "제목", "내용");
-        PostUpdateRequest updateRequest = PostFixture.createPostUpdateRequest("", "내용");
-
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.TITLE_REQUIRED);
+            // when & then
+            Assertions.assertThatThrownBy(() -> postService.updatePost(userId, postId, updateRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TITLE_REQUIRED);
+        }
     }
 }

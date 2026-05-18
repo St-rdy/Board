@@ -5,9 +5,10 @@ import com.example.board.entity.Image;
 import com.example.board.exception.BusinessException;
 import com.example.board.exception.ErrorCode;
 import com.example.board.repository.ImageRepository;
-import com.example.board.support.ImageFixture; // 픽스처 사용
+import com.example.board.support.ImageFixture;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,59 +29,63 @@ class ImageServiceTest {
     @InjectMocks
     private ImageService imageService;
 
-    @Test
-    @DisplayName("이미지 업로드 성공 - 정상적인 파일을 올리면 DB에 저장하고 응답을 반환한다")
-    void uploadImage_success() {
-        // given
-        Long userId = 1L;
-        Long expectedImageId = 10L;
-        MockMultipartFile validFile = ImageFixture.createMockImageFile();
+    @Nested
+    @DisplayName("이미지 업로드")
+    class UploadImage {
 
-        // 저장될 엔티티 가짜(Mock) 세팅
-        Image savedImage = Image.builder()
-                .userId(userId)
-                .imageUrl("https://s3.aws.../uuid_test-image.png")
-                .build();
-        ReflectionTestUtils.setField(savedImage, "id", expectedImageId); // PK 강제 주입
+        @Test
+        @DisplayName("성공 - 정상적인 파일을 올리면 DB에 저장하고 응답을 반환한다")
+        void uploadImage_success() {
+            // given
+            Long userId = 1L;
+            Long expectedImageId = 10L;
+            MockMultipartFile validFile = ImageFixture.createMockImageFile();
 
-        // Mockito: repository.save()가 호출되면 가짜 엔티티를 반환하도록 설정
-        when(imageRepository.save(any(Image.class))).thenReturn(savedImage);
+            Image savedImage = Image.builder()
+                    .userId(userId)
+                    .imageUrl("https://s3.aws.../uuid_test-image.png")
+                    .build();
+            ReflectionTestUtils.setField(savedImage, "id", expectedImageId);
 
-        // when
-        ImageUploadResponse result = imageService.uploadImage(userId, validFile);
+            when(imageRepository.save(any(Image.class))).thenReturn(savedImage);
 
-        // then
-        Assertions.assertThat(result.id()).isEqualTo(expectedImageId);
-        Assertions.assertThat(result.imageUrl()).contains("uuid_test-image.png");
-        verify(imageRepository, times(1)).save(any(Image.class)); // save가 1번 호출되었는지 검증
-    }
+            // when
+            ImageUploadResponse result = imageService.uploadImage(userId, validFile);
 
-    @Test
-    @DisplayName("이미지 업로드 실패 - 빈 파일을 올리면 예외가 발생한다")
-    void uploadImage_fail_emptyFile() {
-        // given
-        Long userId = 1L;
-        MockMultipartFile emptyFile = ImageFixture.createEmptyMockImageFile();
+            // then
+            Assertions.assertThat(result.id()).isEqualTo(expectedImageId);
+            Assertions.assertThat(result.imageUrl()).contains("uuid_test-image.png");
+            verify(imageRepository, times(1)).save(any(Image.class));
+        }
 
-        // when & then
-        Assertions.assertThatThrownBy(() -> imageService.uploadImage(userId, emptyFile))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.EMPTY_FILE);
+        @Test
+        @DisplayName("실패 - 빈 파일을 올리면 예외가 발생한다")
+        void uploadImage_fail_emptyFile() {
+            // given
+            Long userId = 1L;
+            MockMultipartFile emptyFile = ImageFixture.createEmptyMockImageFile();
 
-        // 빈 파일이면 DB 저장이 절대 일어나면 안 됨을 검증
-        verify(imageRepository, never()).save(any());
-    }
+            // when & then
+            Assertions.assertThatThrownBy(() -> imageService.uploadImage(userId, emptyFile))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.EMPTY_FILE);
 
-    @Test
-    @DisplayName("이미지 업로드 실패 - 지원하지 않는 확장자를 올리면 예외가 발생한다")
-    void uploadImage_fail_invalid_file(){
-        Long userId = 1L;
-        MockMultipartFile invalidExtensionFile = ImageFixture.createInvalidExtensionMockFile();
+            verify(imageRepository, never()).save(any());
+        }
 
-        Assertions.assertThatThrownBy(() -> imageService.uploadImage(userId, invalidExtensionFile))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_FILE_EXTENSION);
+        @Test
+        @DisplayName("실패 - 지원하지 않는 확장자를 올리면 예외가 발생한다")
+        void uploadImage_fail_invalid_file() {
+            // given
+            Long userId = 1L;
+            MockMultipartFile invalidExtensionFile = ImageFixture.createInvalidExtensionMockFile();
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> imageService.uploadImage(userId, invalidExtensionFile))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_FILE_EXTENSION);
+        }
     }
 }

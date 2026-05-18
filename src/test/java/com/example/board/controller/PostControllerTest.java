@@ -13,6 +13,7 @@ import com.example.board.security.JwtFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -62,202 +63,226 @@ public class PostControllerTest {
     @MockitoBean
     private JwtFilter jwtFilter;
 
-    @Test
-    @DisplayName("게시글 좋아요 토글 API 성공 테스트")
-    void togglePostLike_success() throws Exception {
-        // given
-        Long postId = 1L;
-        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
-        );
-
-        // when and then
-        mockMvc.perform(post("/api/v1/post/{postId}/like", postId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("게시글 좋아요 토글 성공"));
-    }
-
-    @Test
-    @DisplayName("게시글 스크랩 토글 API 성공 테스트")
-    void togglePostScrap_success() throws Exception {
-        // given
-        Long postId = 1L;
-        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
-        );
-
-        // when and then
-        mockMvc.perform(post("/api/v1/post/{postId}/scrap", postId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("게시글 스크랩 토글 성공"));
-    }
-
-    @Test
-    @DisplayName("게시글 상세 조회 API 성공 테스트")
-    void getPostDetail_success() throws Exception {
-        // given
-        Long postId = 1L;
-        Pageable pageable = PageRequest.of(0, 20);
-        
-        // Mock 댓글 데이터
-        CommentResponse commentResponse = new CommentResponse(
-                101L, 2L, "익명", null, "댓글 내용", "ALIVE", Instant.now(), new ArrayList<>()
-        );
-        Page<CommentResponse> commentPage = new PageImpl<>(List.of(commentResponse), pageable, 1);
-
-        PostDetailResponse postDetailResponse = new PostDetailResponse(
-                postId,
-                Map.of("name", "공시생 잡담"),
-                "상세 제목",
-                "상세 내용",
-                1L,
-                0, 1, 1,
-                Instant.now(),
-                null,
-                null,
-                List.of("http://image1.com", "http://image2.com"),
-                commentPage
-        );
-
-        when(postService.getPostDetail(eq(postId), any(Pageable.class))).thenReturn(postDetailResponse);
-
-        // when and then
-        mockMvc.perform(get("/api/v1/post/{postId}", postId)
-                        .param("page", "0")
-                        .param("size", "20")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.title").value("상세 제목"))
-                .andExpect(jsonPath("$.data.viewCount").value(1))
-                .andExpect(jsonPath("$.data.imageUrls[0]").value("http://image1.com"))
-                .andExpect(jsonPath("$.data.comments.content[0].content").value("댓글 내용"));
-    }
-
-    @Test
-    @DisplayName("게시글 목록 조회 API 성공 테스트")
-    void getPosts_success() throws Exception {
-        // given
-        Pageable pageable = PageRequest.of(0, 10);
-        PostResponse postResponse = new PostResponse(
-                1L,
-                Map.of("regions", "Seoul", "subjects", "Mathematics"),
-                "테스트 제목",
-                "테스트 내용",
-                1L,
-                0, 0, 0,
-                Instant.now(),
-                null,
-                null
-        );
-        Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
-        PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
-
-        when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
-
-        // when and then
-        mockMvc.perform(get("/api/v1/post")
-                        .param("page", "0")
-                        .param("size", "10")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.data.content[0].title").value("테스트 제목"))
-                .andExpect(jsonPath("$.data.content[0].category.regions").value("Seoul"));
-    }
-
-    @Test
-    @DisplayName("게시글 필터링 조회 API 성공 테스트")
-    void getPosts_withFilters_success() throws Exception {
-        // given
-        String region = "Seoul";
-        String subject = "Mathematics";
-        String keyword = "자바";
-        Pageable pageable = PageRequest.of(0, 10);
-        PostResponse postResponse = new PostResponse(
-                1L,
-                Map.of("regions", region, "subjects", subject),
-                "자바 질문입니다",
-                "내용",
-                1L,
-                0, 0, 0,
-                Instant.now(),
-                null,
-                null
-        );
-        Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
-        PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
-
-        when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
-
-        // when and then
-        mockMvc.perform(get("/api/v1/post")
-                        .param("region", region)
-                        .param("subject", subject)
-                        .param("keyword", keyword)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].title").value("자바 질문입니다"))
-                .andExpect(jsonPath("$.data.content[0].category.regions").value(region))
-                .andExpect(jsonPath("$.data.content[0].category.subjects").value(subject));
-    }
-
-    @Test
-    @DisplayName("게시글 수정 API 성공 테스트")
-    void updatePost_success() throws Exception {
-        // given
-        Long postId = 1L;
-
-        // SecurityContext에 Mock 유저 주입
-        JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
-        );
-
-        PostUpdateRequest updateRequest = new PostUpdateRequest(
-                Map.of("name", "수정된 카테고리"),
-                "수정된 제목",
-                "수정된 내용",
-                List.of(1L, 2L)
-        );
-        PostResponse postResponse = new PostResponse(
-                postId,
-                updateRequest.category(),
-                updateRequest.title(),
-                updateRequest.content(),
-                1L,
-                0, 0, 0,
-                Instant.now(),
-                Instant.now(),
-                null
-        );
-
-        when(postService.updatePost(any(), eq(postId), any(PostUpdateRequest.class))).thenReturn(postResponse);
-
-        // when and then
-        mockMvc.perform(patch("/api/v1/post/{postId}", postId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.title").value("수정된 제목"))
-                .andExpect(jsonPath("$.message").value("게시글 수정 성공"));
-    }
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Nested
+    @DisplayName("게시글 좋아요 토글")
+    class TogglePostLike {
+
+        @Test
+        @DisplayName("성공")
+        void togglePostLike_success() throws Exception {
+            // given
+            Long postId = 1L;
+            JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+            );
+
+            // when & then
+            mockMvc.perform(post("/api/v1/post/{postId}/like", postId)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200))
+                    .andExpect(jsonPath("$.message").value("게시글 좋아요 토글 성공"));
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 스크랩 토글")
+    class TogglePostScrap {
+
+        @Test
+        @DisplayName("성공")
+        void togglePostScrap_success() throws Exception {
+            // given
+            Long postId = 1L;
+            JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+            );
+
+            // when & then
+            mockMvc.perform(post("/api/v1/post/{postId}/scrap", postId)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200))
+                    .andExpect(jsonPath("$.message").value("게시글 스크랩 토글 성공"));
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 상세 조회")
+    class GetPostDetail {
+
+        @Test
+        @DisplayName("성공")
+        void getPostDetail_success() throws Exception {
+            // given
+            Long postId = 1L;
+            Pageable pageable = PageRequest.of(0, 20);
+
+            CommentResponse commentResponse = new CommentResponse(
+                    101L, 2L, "익명", null, "댓글 내용", "ALIVE", Instant.now(), new ArrayList<>()
+            );
+            Page<CommentResponse> commentPage = new PageImpl<>(List.of(commentResponse), pageable, 1);
+
+            PostDetailResponse postDetailResponse = new PostDetailResponse(
+                    postId,
+                    Map.of("name", "공시생 잡담"),
+                    "상세 제목",
+                    "상세 내용",
+                    1L,
+                    0, 1, 1,
+                    Instant.now(),
+                    null,
+                    null,
+                    List.of("http://image1.com", "http://image2.com"),
+                    commentPage
+            );
+
+            when(postService.getPostDetail(eq(postId), any(Pageable.class))).thenReturn(postDetailResponse);
+
+            // when & then
+            mockMvc.perform(get("/api/v1/post/{postId}", postId)
+                            .param("page", "0")
+                            .param("size", "20")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200))
+                    .andExpect(jsonPath("$.data.title").value("상세 제목"))
+                    .andExpect(jsonPath("$.data.viewCount").value(1))
+                    .andExpect(jsonPath("$.data.imageUrls[0]").value("http://image1.com"))
+                    .andExpect(jsonPath("$.data.comments.content[0].content").value("댓글 내용"));
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 목록 조회")
+    class GetPosts {
+
+        @Test
+        @DisplayName("성공")
+        void getPosts_success() throws Exception {
+            // given
+            Pageable pageable = PageRequest.of(0, 10);
+            PostResponse postResponse = new PostResponse(
+                    1L,
+                    Map.of("regions", "Seoul", "subjects", "Mathematics"),
+                    "테스트 제목",
+                    "테스트 내용",
+                    1L,
+                    0, 0, 0,
+                    Instant.now(),
+                    null,
+                    null
+            );
+            Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
+            PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
+
+            when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
+
+            // when & then
+            mockMvc.perform(get("/api/v1/post")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200))
+                    .andExpect(jsonPath("$.status").value("SUCCESS"))
+                    .andExpect(jsonPath("$.data.content[0].title").value("테스트 제목"))
+                    .andExpect(jsonPath("$.data.content[0].category.regions").value("Seoul"));
+        }
+
+        @Test
+        @DisplayName("성공 - 필터링 조건 적용")
+        void getPosts_withFilters_success() throws Exception {
+            // given
+            String region = "Seoul";
+            String subject = "Mathematics";
+            String keyword = "자바";
+            Pageable pageable = PageRequest.of(0, 10);
+            PostResponse postResponse = new PostResponse(
+                    1L,
+                    Map.of("regions", region, "subjects", subject),
+                    "자바 질문입니다",
+                    "내용",
+                    1L,
+                    0, 0, 0,
+                    Instant.now(),
+                    null,
+                    null
+            );
+            Page<PostResponse> page = new PageImpl<>(List.of(postResponse), pageable, 1);
+            PageResponse<PostResponse> pageResponse = new PageResponse<>(page);
+
+            when(postService.getPosts(any(PostSearchRequest.class), any(Pageable.class))).thenReturn(pageResponse);
+
+            // when & then
+            mockMvc.perform(get("/api/v1/post")
+                            .param("region", region)
+                            .param("subject", subject)
+                            .param("keyword", keyword)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content[0].title").value("자바 질문입니다"))
+                    .andExpect(jsonPath("$.data.content[0].category.regions").value(region))
+                    .andExpect(jsonPath("$.data.content[0].category.subjects").value(subject));
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 수정")
+    class UpdatePost {
+
+        @Test
+        @DisplayName("성공")
+        void updatePost_success() throws Exception {
+            // given
+            Long postId = 1L;
+
+            JwtUserInfo mockUser = new JwtUserInfo(1L, "nickname", "profileUrl");
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(mockUser, null, Collections.emptyList())
+            );
+
+            PostUpdateRequest updateRequest = new PostUpdateRequest(
+                    Map.of("name", "수정된 카테고리"),
+                    "수정된 제목",
+                    "수정된 내용",
+                    List.of(1L, 2L)
+            );
+            PostResponse postResponse = new PostResponse(
+                    postId,
+                    updateRequest.category(),
+                    updateRequest.title(),
+                    updateRequest.content(),
+                    1L,
+                    0, 0, 0,
+                    Instant.now(),
+                    Instant.now(),
+                    null
+            );
+
+            when(postService.updatePost(any(), eq(postId), any(PostUpdateRequest.class))).thenReturn(postResponse);
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/post/{postId}", postId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(updateRequest)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200))
+                    .andExpect(jsonPath("$.data.title").value("수정된 제목"))
+                    .andExpect(jsonPath("$.message").value("게시글 수정 성공"));
+        }
     }
 }
