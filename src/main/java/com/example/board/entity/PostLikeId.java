@@ -12,10 +12,12 @@ import java.util.Objects;
 
 @Getter
 @Setter
-@Embeddable
+@Embeddable //단독 테이블이 아닌 다른 엔티티 안에 쓰이는 값을 의미
 public class PostLikeId implements Serializable {
+
     @Serial
     private static final long serialVersionUID = -7729809620348451304L;
+
     @Column(name = "user_id", nullable = false)
     private Long userId;
 

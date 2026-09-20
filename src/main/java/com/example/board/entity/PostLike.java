@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "post_like")
 public class PostLike {
-    @EmbeddedId
+    @EmbeddedId //엔티티의 PK라는것을 선언과 동시에 클래스로 구현을 했다는 표시
     private PostLikeId id;
 
     @MapsId("postId")

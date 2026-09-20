@@ -23,6 +23,7 @@ public enum ErrorCode {
     NOT_FOUND(404, "NOT_FOUND", "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(404, "NOT_FOUND", "댓글을 찾을 수 없습니다."),
     PARENT_NOT_FOUND(404, "PARENT_NOT_FOUND", "상위 댓글을 찾을 수 없습니다."),
+    ALREADY_DELETED(409, "ALREADY_DELETED", "이미 삭제된 댓글입니다."),
 
     // 500 Internal Server Error
     DB_ERROR(500, "DB_ERROR", "데이터베이스 조회 중 오류가 발생했습니다."),
